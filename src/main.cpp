@@ -58,7 +58,7 @@ void        timer100();
 // The object for the MP3 player
 VS1053* vs1053player;
 
-IRrecv IrReceiver(ir_pin);
+IRrecv IrReceiver(IR_PIN);
 
 // Global variables
 TaskHandle_t      maintask;                            // Taskhandle for main task
@@ -83,14 +83,14 @@ void setup() {
              ESP.getFreeHeap());                       // Normally about 170 kB
   maintask = xTaskGetCurrentTaskHandle();               // My taskhandle
   SPIsem = xSemaphoreCreateMutex();                    // Semaphore for SPI bus
-  SPI.begin(spi_sck_pin, spi_miso_pin, spi_mosi_pin);
+  SPI.begin(TFT_SCLK, TFT_MISO, TFT_MOSI);
 
   display_begin();
 
-  vs1053player = new VS1053(vs_cs_pin, vs_dcs_pin, vs_dreq_pin, -1, -1);
+  vs1053player = new VS1053(VS_CS_PIN, VS_DCS_PIN, VS_DREQ_PIN, -1, -1);
   
-  if (ir_pin >= 0) {
-    dbgprint("Enable pin %d for IR", ir_pin);
+  if (IR_PIN >= 0) {
+    dbgprint("Enable pin %d for IR", IR_PIN);
     IrReceiver.enableIRIn();  // Start the receiver
   }
 
@@ -331,8 +331,7 @@ const char* analyzeCmd(const char* par, const char* val )
                 icystreamtitle.c_str());            // Streamtitle from metadata
     }
   } else {
-    sprintf(reply, "%s called with illegal parameter: %s",
-              NAME, argument.c_str());
+    sprintf(reply, "called with illegal parameter: %s", argument.c_str());
   }
   return reply;                                     // Return reply to the caller
 }

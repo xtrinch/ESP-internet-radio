@@ -5,7 +5,7 @@
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&tft);
 
-XPT2046_Touchscreen ts(TOUCH_CS, tft_touch_irq_pin);  // Param 2 - Touch IRQ Pin - interrupt enabled polling
+XPT2046_Touchscreen ts(TOUCH_CS, TFT_TOUCH_IRQ_PIN);  // Param 2 - Touch IRQ Pin - interrupt enabled polling
 
 uint16_t width = 320;
 uint16_t height = 240;
