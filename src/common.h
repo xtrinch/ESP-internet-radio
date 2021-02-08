@@ -13,6 +13,8 @@
 #define vs_cs_pin 22 // VS1053 pins
 #define vs_dcs_pin 32
 #define vs_dreq_pin 4
+#define vs_shutdown_pin -1 // Amplifier shut-down pin
+#define vs_shutdownx_pin -1 // Amplifier shut-down pin (inversed logic)
 #define spi_sck_pin      18
 #define spi_miso_pin     19
 #define spi_mosi_pin     23
