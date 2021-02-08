@@ -2,7 +2,7 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define ir_pin -1
+#define ir_pin 25
 #define tft_cs_pin 15 // Display SPI version
 #define tft_dc_pin 2 // Display SPI version
 #define tft_scl_pin 18 // Display I2C version

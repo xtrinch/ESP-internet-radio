@@ -5,47 +5,38 @@ uint16_t          ir_value = 0;                        // IR code
 uint32_t          ir_0 = 550;                          // Average duration of an IR short pulse
 uint32_t          ir_1 = 1650;                         // Average duration of an IR long pulse
 
-
-//                                     S C A N I R                  
-
 // See if IR input is available.  Execute the programmed command.   
-
 void scanIR()
 {
   // TODO: use hardcoded keys
 
-  // char        mykey[20];                                  // For numerated key
-  // String      val;                                        // Contents of preference entry
-  // const char* reply;                                      // Result of analyzeCmd
-  // if (ir_value)                                          // Any input?
-  // {
-  //   sprintf(mykey, "ir_%04X", ir_value);                // Form key in preferences
-  //   if (nvssearch(mykey))
-  //   {
-  //     val = nvsgetstr(mykey);                           // Get the contents
-  //     dbgprint("IR code %04X received. Will execute %s",
-  //                ir_value, val.c_str());
-  //     reply = analyzeCmd(val.c_str());                  // Analyze command and handle it
-  //     dbgprint(reply);                                  // Result for debugging
-  //   }
-  //   else
-  //   {
-  //     dbgprint("IR code %04X received, but not found in preferences!  Timing %d/%d",
-  //                ir_value, ir_0, ir_1);
-  //   }
-  //   ir_value = 0;                                         // Reset IR code received
-  // }
+  char        mykey[20];                                  // For numerated key
+  String      val;                                        // Contents of preference entry
+  const char* reply;                                      // Result of analyzeCmd
+  if (ir_value)                                          // Any input?
+  {
+    sprintf(mykey, "ir_%04X", ir_value);                // Form key in preferences
+    // if (nvssearch(mykey))
+    // {
+    //   val = nvsgetstr(mykey);                           // Get the contents
+    //   dbgprint("IR code %04X received. Will execute %s",
+    //              ir_value, val.c_str());
+    //   reply = analyzeCmd(val.c_str());                  // Analyze command and handle it
+    //   dbgprint(reply);                                  // Result for debugging
+    // }
+    // else
+    // {
+    //   dbgprint("IR code %04X received, but not found in preferences!  Timing %d/%d",
+    //              ir_value, ir_0, ir_1);
+    // }
+    ir_value = 0;                                         // Reset IR code received
+  }
 }
-
-
-
-//                                          I S R _ I R             
 
 // Interrupts received from VS1838B on every change of the signal.  
 // Intervals are 640 or 1640 microseconds for data.  syncpulses are 3400 micros or longer.      
 // Input is complete after 65 level changes.                        
 // Only the last 32 level changes are significant and will be handed over to common data.       
-
 void IRAM_ATTR isr_IR()
 {
   sv uint32_t      t0 = 0;                         // To get the interval
