@@ -8,6 +8,7 @@
 #include <WebServer.h>
 #include "ir.h"
 #include "stream-mp3.h"
+#include <IRremote.h>
 
 // macro to string expansion for env variables
 #define xstr(s) strs(s)
@@ -15,27 +16,22 @@
 
 #define CFG_WIFI_SSID xstr(WIFI_SSID)
 #define CFG_WIFI_PASSWORD xstr(WIFI_PASSWORD)
-#define ILI9341                      // ILI9341 240*320
 // Number of entries in the queue
 #define QSIZ 400
 
 #include <Arduino.h>
-#include <nvs.h>
-#include <ESPmDNS.h>
-#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <SPI.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
 #include <esp_task_wdt.h>
-#include <esp_partition.h>
 #include <driver/adc.h>
 
-extern hw_timer_t*       timer;                        // For timer
 extern int16_t           currentpreset;                   // Preset station playing
 extern int16_t           newpreset;                       // Preset station playing
 extern int8_t            playing;                     // 1 if radio is playing (for MQTT)
+extern IRrecv            IrReceiver;
 
 const char* analyzeCmd(const char* str);
 const char* analyzeCmd(const char* par, const char* val);

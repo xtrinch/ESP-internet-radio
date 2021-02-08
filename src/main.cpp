@@ -52,21 +52,102 @@ void        playtask(void * parameter);             // Task to play the stream
 void        spftask(void * parameter);              // Task for special functions
 void        claimSPI(const char* p);                // Claim SPI bus for exclusive access
 void        releaseSPI();                              // Release the claim
+bool        setupWiFi();
+void        timer100();
 
 // The object for the MP3 player
 VS1053* vs1053player;
+
+IRrecv IrReceiver(ir_pin);
 
 // Global variables
 TaskHandle_t      maintask;                            // Taskhandle for main task
 TaskHandle_t      xplaytask;                           // Task handle for playtask
 TaskHandle_t      xspftask;                            // Task handle for special functions
 SemaphoreHandle_t SPIsem = NULL;                       // For exclusive SPI usage
-hw_timer_t*       timer = NULL;                        // For timer
+hw_timer_t*       hw_timer = NULL;                     // For timer
 QueueHandle_t     spfqueue;                            // Queue for special functions
 int16_t           currentpreset = -1;                  // Preset station playing
 int16_t           newpreset = 0;                       // Preset station playing
 bool              NetworkFound = false;                // True if WiFi network connected
 int8_t            playing = 0;                         // 1 if radio is playing (for MQTT)
+
+void setup() {
+  Serial.begin(115200);                              // For debug
+  Serial.println();
+
+  // Print some memory and sketch info
+  dbgprint("Starting ESP32-radio running on CPU %d at %d MHz. Free memory %d",
+             xPortGetCoreID(),
+             ESP.getCpuFreqMHz(),
+             ESP.getFreeHeap());                       // Normally about 170 kB
+  maintask = xTaskGetCurrentTaskHandle();               // My taskhandle
+  SPIsem = xSemaphoreCreateMutex();                    // Semaphore for SPI bus
+  SPI.begin(spi_sck_pin, spi_miso_pin, spi_mosi_pin);
+
+  display_begin();
+
+  vs1053player = new VS1053(vs_cs_pin, vs_dcs_pin, vs_dreq_pin, -1, -1);
+  
+  if (ir_pin >= 0) {
+    dbgprint("Enable pin %d for IR", ir_pin);
+    IrReceiver.enableIRIn();  // Start the receiver
+  }
+
+  if (tft_bl_pin >= 0) {                      // Backlight for TFT control?
+    pinMode(tft_bl_pin, OUTPUT);           // Yes, enable output
+  }
+  if (tft_blx_pin >= 0) {                     // Backlight for TFT (inversed logic) control?
+    pinMode(tft_blx_pin, OUTPUT);          // Yes, enable output
+  }
+  blset(true);                                       // Enable backlight (if configured)
+  WiFi.disconnect();                                    // After restart router could still
+  delay(500);                                        // keep old connection
+  WiFi.mode(WIFI_STA);                               // This ESP is a station
+  delay(500);                                        // ??
+  WiFi.persistent(false);                            // Do not save SSID and password
+
+  vs1053player->begin();                                // Initialize VS1053 player
+  // vs1053player->switchToMp3Mode();
+
+  delay(10);
+  NetworkFound = setupWiFi();                           // Connect to WiFi network
+  if (!NetworkFound) {                                  // OTA and MQTT only if Wifi network found
+    currentpreset = -1;               // No network: do not start radio
+  }
+  hw_timer = timerBegin(0, 80, true);                   // User 1st timer with prescaler 80
+  timerAttachInterrupt(hw_timer, &timer100, true);      // Call hw_timer100() on hw_timer alarm
+  timerAlarmWrite(hw_timer, 100000, true);              // Alarm every 100 msec
+  timerAlarmEnable(hw_timer);                           // Enable the timer
+  delay(1000);                                       // Show IP for a while
+
+  outchunk.datatyp = QDATA;                             // This chunk dedicated to QDATA
+  dataqueue = xQueueCreate(QSIZ,                        // Create queue for communication
+                             sizeof(qdata_struct));
+  xTaskCreatePinnedToCore (
+    playtask,                                             // Task to play data in dataqueue.
+    "Playtask",                                           // name of task.
+    1600,                                                 // Stack size of task
+    NULL,                                                 // parameter of the task
+    2,                                                    // priority of the task
+    &xplaytask,                                           // Task handle to keep track of created task
+    0);                                                 // Run on CPU 0
+  xTaskCreate (
+    spftask,                                              // Task to handle special functions.
+    "Spftask",                                            // name of task.
+    2048,                                                 // Stack size of task
+    NULL,                                                 // parameter of the task
+    1,                                                    // priority of the task
+    &xspftask);                                         // Task handle to keep track of created task
+}
+
+// Main loop of the program.                                        
+void loop()
+{
+  mp3loop();                                       // Do mp3 related actions
+  scanIR();                                        // See if IR input
+  mp3loop();                                       // Do more mp3 related actions
+}
 
 // Claim the SPI bus.  Uses FreeRTOS semaphores.                    
 // If the semaphore cannot be claimed within the time-out period, the function continues without
@@ -157,85 +238,6 @@ bool setupWiFi() {
   
   dbgprint("Station: Connected to WiFi");
   return true;
-}
-
-void setup() {
-  Serial.begin(115200);                              // For debug
-  Serial.println();
-
-  // Print some memory and sketch info
-  dbgprint("Starting ESP32-radio running on CPU %d at %d MHz. Free memory %d",
-             xPortGetCoreID(),
-             ESP.getCpuFreqMHz(),
-             ESP.getFreeHeap());                       // Normally about 170 kB
-  maintask = xTaskGetCurrentTaskHandle();               // My taskhandle
-  SPIsem = xSemaphoreCreateMutex();                    // Semaphore for SPI bus
-  SPI.begin(spi_sck_pin, spi_miso_pin, spi_mosi_pin);
-
-  display_begin();
-
-  vs1053player = new VS1053(vs_cs_pin, vs_dcs_pin, vs_dreq_pin, -1, -1);
-  
-  if (ir_pin >= 0) {
-    dbgprint("Enable pin %d for IR",
-               ir_pin);
-    pinMode(ir_pin, INPUT);                // Pin for IR receiver VS1838B
-    attachInterrupt(ir_pin, isr_IR, CHANGE);
-  }
-
-  if (tft_bl_pin >= 0) {                      // Backlight for TFT control?
-    pinMode(tft_bl_pin, OUTPUT);           // Yes, enable output
-  }
-  if (tft_blx_pin >= 0) {                     // Backlight for TFT (inversed logic) control?
-    pinMode(tft_blx_pin, OUTPUT);          // Yes, enable output
-  }
-  blset(true);                                       // Enable backlight (if configured)
-  WiFi.disconnect();                                    // After restart router could still
-  delay(500);                                        // keep old connection
-  WiFi.mode(WIFI_STA);                               // This ESP is a station
-  delay(500);                                        // ??
-  WiFi.persistent(false);                            // Do not save SSID and password
-
-  vs1053player->begin();                                // Initialize VS1053 player
-  // vs1053player->switchToMp3Mode();
-
-  delay(10);
-  NetworkFound = setupWiFi();                           // Connect to WiFi network
-  if (!NetworkFound) {                                  // OTA and MQTT only if Wifi network found
-    currentpreset = -1;               // No network: do not start radio
-  }
-  timer = timerBegin(0, 80, true);                   // User 1st timer with prescaler 80
-  timerAttachInterrupt(timer, &timer100, true);      // Call timer100() on timer alarm
-  timerAlarmWrite(timer, 100000, true);              // Alarm every 100 msec
-  timerAlarmEnable(timer);                           // Enable the timer
-  delay(1000);                                       // Show IP for a while
-
-  outchunk.datatyp = QDATA;                             // This chunk dedicated to QDATA
-  dataqueue = xQueueCreate(QSIZ,                        // Create queue for communication
-                             sizeof(qdata_struct));
-  xTaskCreatePinnedToCore (
-    playtask,                                             // Task to play data in dataqueue.
-    "Playtask",                                           // name of task.
-    1600,                                                 // Stack size of task
-    NULL,                                                 // parameter of the task
-    2,                                                    // priority of the task
-    &xplaytask,                                           // Task handle to keep track of created task
-    0);                                                 // Run on CPU 0
-  xTaskCreate (
-    spftask,                                              // Task to handle special functions.
-    "Spftask",                                            // name of task.
-    2048,                                                 // Stack size of task
-    NULL,                                                 // parameter of the task
-    1,                                                    // priority of the task
-    &xspftask);                                         // Task handle to keep track of created task
-}
-
-// Main loop of the program.                                        
-void loop()
-{
-  mp3loop();                                       // Do mp3 related actions
-  scanIR();                                        // See if IR input
-  mp3loop();                                       // Do more mp3 related actions
 }
 
 // Handling of the various commands from remote webclient, Serial or MQTT.           
@@ -376,22 +378,17 @@ void playtask(void * parameter) {
   }
 }
 
-// Handle special (non-stream data) functions for spftask.          
-void handle_spec() {
-  // Do some special function if necessary
-  claimSPI("hspectft");                                 // Yes, claim SPI bus
-  refreshDisplay();                                        // Yes, TFT refresh necessary
-  releaseSPI();                                            // Yes, release SPI bus
-  claimSPI("hspec");                                      // Claim SPI bus
-  vs1053player->setVolume(90);            // Unmute
-  releaseSPI();                                              // Release SPI bus
-}
-
 // Handles display of text, time and volume on TFT.                 
 // This task runs on a low priority.                                
 void spftask(void * parameter) {
   while(true) {
-    handle_spec();                                                 // Maybe some special funcs?
+    claimSPI("hspectft");                                 // Yes, claim SPI bus
+    refreshDisplay();                                        // Yes, TFT refresh necessary
+    releaseSPI();                                            // Yes, release SPI bus
+    claimSPI("hspec");                                      // Claim SPI bus
+    vs1053player->setVolume(90);            // Unmute
+    releaseSPI();                                              // Release SPI bus
+    
     // highly necessary, as wi-fi will intermittently stop working without it!
     vTaskDelay(100 / portTICK_PERIOD_MS);                       // Pause for a short time
   }
