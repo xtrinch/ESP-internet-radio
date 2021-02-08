@@ -2,11 +2,10 @@
 #define __MAIN_H__
 
 #include <Arduino.h>
-#include "defaultprefs.h"
-#include <VS1053.h>
+#include "vs1053.h"
 #include "common.h"
 #include "tft-ili9341.h"
-#include "webserver.h"
+#include <WebServer.h>
 #include "ir.h"
 #include "stream-mp3.h"
 
@@ -32,15 +31,7 @@
 #include <esp_task_wdt.h>
 #include <esp_partition.h>
 #include <driver/adc.h>
-#include "defaultprefs.h"
 
-typedef struct keyname_t                                      // For keys in NVS
-{
-  char      Key[16];                                // Max length is 15 plus delimeter
-} keyname_t;
-
-extern bool              NetworkFound;                // True if WiFi network connected
-extern char              nvskeys[MAXKEYS][16];          // Space for NVS keys
 extern hw_timer_t*       timer;                        // For timer
 extern int16_t           currentpreset;                   // Preset station playing
 extern int16_t           newpreset;                       // Preset station playing

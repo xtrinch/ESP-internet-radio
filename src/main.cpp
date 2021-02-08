@@ -174,7 +174,7 @@ void setup() {
 
   display_begin();
 
-  vs1053player = new VS1053(vs_cs_pin, vs_dcs_pin, vs_dreq_pin);
+  vs1053player = new VS1053(vs_cs_pin, vs_dcs_pin, vs_dreq_pin, -1, -1);
   
   if (ir_pin >= 0) {
     dbgprint("Enable pin %d for IR",
@@ -197,7 +197,7 @@ void setup() {
   WiFi.persistent(false);                            // Do not save SSID and password
 
   vs1053player->begin();                                // Initialize VS1053 player
-  vs1053player->switchToMp3Mode();
+  // vs1053player->switchToMp3Mode();
 
   delay(10);
   NetworkFound = setupWiFi();                           // Connect to WiFi network

@@ -35,9 +35,9 @@ extern String            icyname;                             // Icecast station
 extern char presets[12][100];
 
 void        stop_mp3client ();
-void        showstreamtitle(const char* ml, bool full = false);
-void handlebyte_ch(uint8_t b);
-bool connecttohost();
+void        showstreamtitle(const char* ml);
+void        handlebyte_ch(uint8_t b);
+bool        connecttohost();
 void        mp3loop();
 
 #endif

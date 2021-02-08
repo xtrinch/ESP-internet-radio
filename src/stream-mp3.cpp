@@ -347,7 +347,7 @@ void handlebyte_ch(uint8_t b ) {
         // Sometimes it is just other info like:
         // "StreamTitle='60s 03 05 Magic60s';StreamUrl='';"
         // Isolate the StreamTitle, remove leading and trailing quotes if present.
-        showstreamtitle(metalinebf, true);               // Show artist and title if present in metadata
+        showstreamtitle(metalinebf);               // Show artist and title if present in metadata
       }
       if (metalinebfx  >(METASIZ - 10)) {          // Unlikely metaline length?
         dbgprint("Metadata block too long! Skipping all Metadata from now on.");
@@ -363,7 +363,7 @@ void handlebyte_ch(uint8_t b ) {
 
 // Show artist and songtitle if present in metadata.                
 // Show always if full=true.                                        
-void showstreamtitle(const char *ml, bool full ) {
+void showstreamtitle(const char *ml) {
   char*             p1 ;
   char*             p2 ;
   char              streamtitle[150];          // Streamtitle from metadata
@@ -384,14 +384,10 @@ void showstreamtitle(const char *ml, bool full ) {
     // Save last part of string as streamtitle.  Protect against buffer overflow
     strncpy(streamtitle, p1, sizeof(streamtitle));
     streamtitle[sizeof(streamtitle)- 1] = '\0' ;
-  }
-  else if (full) {
+  } else {
     // Info probably from playlist
     strncpy(streamtitle, ml, sizeof(streamtitle));
     streamtitle[sizeof(streamtitle)- 1] = '\0' ;
-  } else {
-    icystreamtitle = "";                      // Unknown type
-    return;                                   // Do not show
   }
   // Save for status request from browser and for MQTT
   icystreamtitle = streamtitle ;
