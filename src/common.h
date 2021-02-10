@@ -2,9 +2,6 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define tft_bl_pin -1 // Display backlight
-#define tft_blx_pin -1 // Display backlight (inversed logic)
-
 #define DEBUG_BUFFER_SIZE 150
 #define sv DRAM_ATTR static volatile
 

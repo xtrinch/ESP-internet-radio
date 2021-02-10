@@ -15,6 +15,9 @@ void scanIR()
 {
     // Check if received data is available and if yes, try to decode it.
     if (IrReceiver.decode()) {
+      // wake up the screen if IR command is received
+      blset(true);
+
       // Print a short summary of received data
       IrReceiver.printIRResultShort(&Serial);
       if (IrReceiver.decodedIRData.protocol == UNKNOWN) {

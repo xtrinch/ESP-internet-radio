@@ -7,8 +7,9 @@ env.Append(CPPDEFINES=[
   ("TFT_MOSI", "23"), # shared with VS1053, touch controller & TFT controller
   ("TFT_SCLK", "18"), # shared with VS1053, touch controller & TFT controller
   ("TFT_CS", "15"),
-  ("TFT_RST", "-1"),
+  ("TFT_RST", "-1"), # tied to enable
   ("TFT_DC", "2"),
+  ("TFT_BL", "21"), # backlight pin
   ("TFT_TOUCH_IRQ_PIN", "26"),
   ("VS_CS_PIN", "22"), # VS1053 chip select pin
   ("VS_DCS_PIN", "32"), # VS1053 DCS pin

@@ -48,6 +48,8 @@ bool refreshDisplay()
   if (ts.tirqTouched()) {
     if (ts.touched()) {
       if (millis() - last_interrupt_time > 500) {
+        blset(true);
+
         TS_Point p = ts.getPoint();
         uint16_t x = p.x;
         uint16_t y = p.y;
@@ -134,18 +136,12 @@ bool display_begin()
 
 // Enable or disable the TFT backlight if configured.               
 // May be called from interrupt level.                              
-void IRAM_ATTR blset(bool enable )
+void IRAM_ATTR blset(bool enable)
 {
-  if (tft_bl_pin >= 0)                      // Backlight for TFT control?
-  {
-    digitalWrite(tft_bl_pin, enable);      // Enable/disable backlight
+  if (TFT_BL >= 0) {                     // Backlight for TFT control?
+    digitalWrite(TFT_BL, enable);      // Enable/disable backlight
   }
-  if (tft_blx_pin >= 0)                     // Backlight for TFT (inversed logic) control?
-  {
-    digitalWrite(tft_blx_pin, !enable);    // Enable/disable backlight
-  }
-  if (enable )
-  {
+  if (enable) {
     bltimer = 0;                                       // Reset counter backlight time-out
   }
 }
@@ -174,8 +170,7 @@ void touch_calibrate()
   Serial.print("  uint16_t calData[5] = ");
   Serial.print("{ ");
 
-  for (uint8_t i = 0; i < 5; i++)
-  {
+  for (uint8_t i = 0; i < 5; i++) {
     Serial.print(calData[i]);
     if (i < 4) Serial.print(", ");
   }

@@ -89,11 +89,8 @@ void setup() {
   
   setupIR();
 
-  if (tft_bl_pin >= 0) {                      // Backlight for TFT control?
-    pinMode(tft_bl_pin, OUTPUT);           // Yes, enable output
-  }
-  if (tft_blx_pin >= 0) {                     // Backlight for TFT (inversed logic) control?
-    pinMode(tft_blx_pin, OUTPUT);          // Yes, enable output
+  if (TFT_BL >= 0) {                      // Backlight for TFT control?
+    pinMode(TFT_BL, OUTPUT);           // Yes, enable output
   }
   blset(true);                                       // Enable backlight (if configured)
   WiFi.disconnect();                                    // After restart router could still
@@ -199,7 +196,7 @@ void IRAM_ATTR timer10sec() {
 void IRAM_ATTR timer100() {
   sv int16_t   count10sec = 0;                  // Counter for activatie 10 seconds process
 
-  if (++count10sec == 100 ) {                    // 10 seconds passed?
+  if (++count10sec == 100) {                    // 10 seconds passed?
     timer10sec();                                // Yes, do 10 second procedure
     count10sec = 0;                             // Reset count
   }
@@ -207,7 +204,9 @@ void IRAM_ATTR timer100() {
     if (++bltimer == BL_TIME)                  // Time to blank the TFT screen?
     {
       bltimer = 0;                              // Yes, reset counter
-      blset(false);                           // Disable TFT (backlight)
+      if (!isPlaying()) {
+        blset(false);                           // Disable TFT (backlight)
+      }
     }
   }
 }
