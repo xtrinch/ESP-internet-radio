@@ -2,17 +2,8 @@
 #ifndef __VS1053_H__
 #define __VS1053_H__
 
-//
-
 // VS1053 stuff.  Based on maniacbug library.                       
 
-// VS1053 class definition.                                         
-
-
-// VS1053 class implementation.                                     
-
-
-#include <Arduino.h>
 #include <SPI.h>
 #include "common.h"
 

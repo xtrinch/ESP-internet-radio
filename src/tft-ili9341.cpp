@@ -44,9 +44,7 @@ unsigned long last_interrupt_time = 0;
 // Check if tft refresh is requested.                               
 bool refreshDisplay()
 {
-  // tirqTouched() is much faster than touched().  For projects where other SPI chips
-  // or other time sensitive tasks are added to loop(), using tirqTouched() can greatly
-  // reduce the delay added to loop() when the screen has not been touched.
+  // tirqTouched() is much faster than touched()
   if (ts.tirqTouched()) {
     if (ts.touched()) {
       if (millis() - last_interrupt_time > 500) {
@@ -56,19 +54,19 @@ bool refreshDisplay()
         tft.convertRawXY(&x, &y);
         // tft.drawCircle(x, y, 1, TFT_WHITE);
         last_interrupt_time = millis();
-        // dbgprint("tch: %d %d", x, y);
+        // ardprintf("tch: %d %d", x, y);
         // if x on icon 120,60 with wxh 32x32, we use a safety safety margin of 10 on sides
         if (x > 120 && x < 190 && y < 200 && y > 160) {
           // request stop or play
-          if (!playing) {
-            analyzeCmd("resume");
+          if (!isPlaying()) {
+            changeState("resume");
           } else {
-            analyzeCmd("stop");
+            changeState("stop");
           }
         } else if (x > 50 && x < 110 && y < 200 && y > 160) {
-          analyzeCmd("preset=prev");
+          changeState("preset=prev");
         } else if (x > 230 && x < 290 && y < 200 && y > 160) {
-          analyzeCmd("preset=next");
+          changeState("preset=next");
         }
       }
     }

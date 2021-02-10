@@ -4,22 +4,10 @@
 #include "common.h"
 #include "main.h"
 
-void        tftset(uint16_t inx, const char *str);
-bool refreshDisplay();
-
-// ILI9341.h
-//
-// Contributed by Uksa007@gmail.com
-// Separated from the main sketch to allow several display types.
-// Includes for various ILI9341 displays.  Tested on 320 x 240.
-// Requires Adafruit ILI9341 library, available from library manager.
-// Below set your dsp_getwidth() and dsp_getwidth() to suite your display.
-
-// #include <Adafruit_ILI9341.h>
 #include <TFT_eSPI.h>
 #include <SPIFFS.h>
 
-// Color definitions for the TFT screen (if used)
+// Color definitions for the TFT screen
 // TFT has bits 6 bits (0..5) for RED, 6 bits (6..11) for GREEN and 4 bits (12..15) for BLUE.
 #define BLACK   ILI9341_BLACK
 #define BLUE    ILI9341_BLUE
@@ -36,16 +24,16 @@ bool refreshDisplay();
 #define SMOOTH_FONT_1 "fonts/Latin-Hiragana-24" // 36 point sans serif bold
 // #define SMOOTH_FONT_2 "fonts/Final-Frontier-28" // 36 point sans serif bold
 
-// Data to display.  There are TFTSECS sections
-#define TFTSECS 4
 // Time-out [sec] for blanking TFT display (BL pin)
 #define BL_TIME 45
 
 extern uint16_t          bltimer;                         // Backlight time-out counter
 extern TFT_eSPI     tft;                                  // For instance of display driver
 
-void request_update ();
+void request_update();
 bool display_begin();
 void IRAM_ATTR blset(bool enable);
+void tftset(uint16_t inx, const char *str);
+bool refreshDisplay();
 
 #endif

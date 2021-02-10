@@ -6,8 +6,7 @@
 #include <IRremote.h>
 #include "main.h"
 
-extern uint16_t          ir_value;                         // IR code
-
 void scanIR();
+void setupIR();
 
 #endif

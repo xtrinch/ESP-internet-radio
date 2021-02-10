@@ -4,7 +4,7 @@ datamode_t        datamode;                            // State of datastream
 
 // Send a line of info to serial output.  Works like vsprintf(), but checks the DEBUG flag.     
 // Print only if DEBUG flag is true.  Always returns the formatted string.           
-char* dbgprint(const char* format, ... )
+char* ardprintf(const char* format, ... )
 {
   static char sbuf[DEBUG_BUFFER_SIZE];               // For debug lines
   va_list varArgs;                                   // For variable number of params
@@ -36,7 +36,7 @@ void chomp(String &str ) {
 
 // Change the datamode and show in debug for testing.               
 void setdatamode(datamode_t newmode ) {
-  // dbgprint("Change datamode from 0x%03X to 0x%03X",
+  // ardprintf("Change datamode from 0x%03X to 0x%03X",
   //           (int)datamode, (int)newmode);
   datamode = newmode ;
 }

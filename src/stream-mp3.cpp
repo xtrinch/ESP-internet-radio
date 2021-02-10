@@ -73,13 +73,13 @@ String xmlgethost (String mount) {
   String   urlout;                                // Result URL
 
   stop_mp3client(); // Stop any current wificlient connections.
-  dbgprint("Connect to new iHeartRadio host: %s", mount.c_str());
+  ardprintf("Connect to new iHeartRadio host: %s", mount.c_str());
   setdatamode(INIT);                            // Start default in metamode
   chunked = false;                                  // Assume not chunked
   sprintf(tmpstr, xmlget, mount.c_str());         // Create a GET commmand for the request
-  dbgprint("%s", tmpstr);
+  ardprintf("%s", tmpstr);
   if (mp3client.connect(xmlhost, 80, 5000)) {           // Connect to XML stream
-    dbgprint("Connected to %s", xmlhost);
+    ardprintf("Connected to %s", xmlhost);
     mp3client.print(String(tmpstr)+ " HTTP/1.1\r\n"
                       "Host: " + xmlhost + "\r\n"
                       "User-Agent: Mozilla/5.0\r\n"
@@ -87,10 +87,10 @@ String xmlgethost (String mount) {
     while(mp3client.available() == 0) {
       delay(200);                                 // Give server some time
       if (++timeout > 25) {                         // No answer in 5 seconds?
-        dbgprint("Client Timeout !");
+        ardprintf("Client Timeout !");
       }
     }
-    dbgprint("XML parser processing...");
+    ardprintf("XML parser processing...");
     while(mp3client.available()) {
       sreply = mp3client.readStringUntil('>');
       sreply.trim();
@@ -100,7 +100,7 @@ String xmlgethost (String mount) {
       xmlparse(sreply, "port",        stationPort);
       xmlparse(sreply, "mount",       stationMount);
       if (statuscode != "200") {                    // Good result sofar?
-        dbgprint("Bad xml status-code %s",         // No, show and stop interpreting
+        ardprintf("Bad xml status-code %s",         // No, show and stop interpreting
                    statuscode.c_str());
         tmpstr[0] = '\0';                          // Clear result
         break;
@@ -112,10 +112,10 @@ String xmlgethost (String mount) {
                 stationServer.c_str(),
                 stationPort.c_str(),
                 stationMount.c_str());
-      dbgprint("Found: %s", tmpstr);
+      ardprintf("Found: %s", tmpstr);
     }
   } else {
-    dbgprint("Can't connect to XML host!");       // Connection failed
+    ardprintf("Can't connect to XML host!");       // Connection failed
     tmpstr[0] = '\0' ;
   }
   mp3client.stop();
@@ -147,7 +147,7 @@ bool chkhdrline(const char* str) {
 void scan_content_length(const char* metalinebf) {
   if (strstr(metalinebf, "Content-Length")) {       // Line contains content length
     clength = atoi(metalinebf + 15);                // Yes, set clength
-    dbgprint("Content-Length is %d", clength);      // Show for debugging purposes
+    ardprintf("Content-Length is %d", clength);      // Show for debugging purposes
   }
 }
 
@@ -160,7 +160,7 @@ bool connecttohost() {
   String      auth ;                              // For basic authentication
 
   stop_mp3client();                                // Disconnect if still connected
-  dbgprint("Connect to new host %s", host.c_str());
+  ardprintf("Connect to new host %s", host.c_str());
   tftset(1, "");                                // Clear song and artist
   tftset(2, "Connecting...");                                // Clear song and artist
   setdatamode(INIT);                            // Start default in metamode
@@ -178,12 +178,12 @@ bool connecttohost() {
     port = host.substring(inx + 1 ).toInt();     // Get portnumber as integer
     hostwoext = host.substring(0, inx);         // Host without portnumber
   }
-  dbgprint("Connect to %s on port %d, extension %s",
+  ardprintf("Connect to %s on port %d, extension %s",
              hostwoext.c_str(), port, extension.c_str());
 
-  dbgprint("Wifi stats: %d", WiFi.status());
+  ardprintf("Wifi stats: %d", WiFi.status());
   if (mp3client.connect(hostwoext.c_str(), port, 5000)) {
-    dbgprint("Connected to server");
+    ardprintf("Connected to server");
     mp3client.print(String("GET ")+
                       extension +
                       String(" HTTP/1.1\r\n")+
@@ -196,8 +196,8 @@ bool connecttohost() {
     return true ;
   }
 
-  dbgprint("Request %s failed!", host.c_str());
-  analyzeCmd("stop");
+  ardprintf("Request %s failed!", host.c_str());
+  changeState("stop");
   tftset(2, "No connection");                                // Clear song and artist
 
   return false ;
@@ -251,7 +251,7 @@ void handlebyte_ch(uint8_t b ) {
     metaint = 0;                                     // No metaint found
     LFcount = 0;                                     // For detection end of header
     bitrate = 0;                                     // Bitrate still unknown
-    dbgprint("Switch to HEADER");
+    ardprintf("Switch to HEADER");
     setdatamode(HEADER);                           // Handle header
     totalcount = 0;                                  // Reset totalcount
     metalinebfx = 0;                                 // No metadata yet
@@ -267,7 +267,7 @@ void handlebyte_ch(uint8_t b ) {
       LFcount++;                                     // Count linefeeds
       metalinebf[metalinebfx] = '\0';                // Take care of delimiter
       if (chkhdrline(metalinebf)) {                // Reasonable input?
-        dbgprint("Headerline: %s",                   // Show headerline
+        ardprintf("Headerline: %s",                   // Show headerline
                    metalinebf);
         String metaline = String(metalinebf);      // Convert to string
         String lcml = metaline;                      // Use lower case for compare
@@ -280,7 +280,7 @@ void handlebyte_ch(uint8_t b ) {
           ctseen = true;                             // Yes, remember seeing this
           String ct = metaline.substring(13);      // Set contentstype. Not used yet
           ct.trim();
-          dbgprint("%s seen.", ct.c_str());
+          ardprintf("%s seen.", ct.c_str());
         }
         if (lcml.startsWith("icy-br:")) {
           bitrate = metaline.substring(7).toInt();    // Found bitrate tag, read the bitrate
@@ -308,7 +308,7 @@ void handlebyte_ch(uint8_t b ) {
       }
       metalinebfx = 0;                               // Reset this line
       if (( LFcount == 2)&& ctseen) {              // Content type seen and a double LF?
-        dbgprint("Switch to DATA, bitrate is %d"     // Show bitrate
+        ardprintf("Switch to DATA, bitrate is %d"     // Show bitrate
                    ", metaint is %d",                  // and metaint
                    bitrate, metaint);
         setdatamode(DATA);                         // Expecting data now
@@ -330,7 +330,7 @@ void handlebyte_ch(uint8_t b ) {
       metalinebfx = 0;                               // Prepare to store first character
       metacount = b * 16 + 1;                        // New count for metadata including length byte
       if (metacount > 1 ) {
-        dbgprint("Metadata block %d bytes",
+        ardprintf("Metadata block %d bytes",
                    metacount - 1);                   // Most of the time there are zero bytes of metadata
       }
     } else {
@@ -350,7 +350,7 @@ void handlebyte_ch(uint8_t b ) {
         showstreamtitle(metalinebf);               // Show artist and title if present in metadata
       }
       if (metalinebfx  >(METASIZ - 10)) {          // Unlikely metaline length?
-        dbgprint("Metadata block too long! Skipping all Metadata from now on.");
+        ardprintf("Metadata block too long! Skipping all Metadata from now on.");
         metaint = 0;                                 // Probably no metadata
       }
       datacount = metaint;                           // Reset data count
@@ -369,8 +369,8 @@ void showstreamtitle(const char *ml) {
   char              streamtitle[150];          // Streamtitle from metadata
 
   if (strstr(ml, "StreamTitle=")) {
-    dbgprint("Streamtitle found, %d bytes", strlen(ml));
-    dbgprint(ml);
+    ardprintf("Streamtitle found, %d bytes", strlen(ml));
+    ardprintf(ml);
     p1 = (char*)ml + 12;                      // Begin of artist and title
     if (( p2 = strstr(ml, ";")))         // Search for end of title
     {
@@ -405,7 +405,7 @@ void showstreamtitle(const char *ml) {
 
 // Disconnect from the server.                                      
 void stop_mp3client () {
-  dbgprint ("FLUSH: Stopping client");               // Stop connection to host
+  ardprintf ("FLUSH: Stopping client");               // Stop connection to host
   while(mp3client.connected()) {
     // client.flush() removes only the current packet characters from the socket. By the time you call client.stop(), 
     // the socket may already have characters from the next packet in it.
@@ -429,8 +429,7 @@ void mp3loop() {
   uint32_t        qspace;                              // Free space in data queue
 
   // Try to keep the Queue to playtask filled up by adding as much bytes as possible
-  if (datamode &(INIT | HEADER | DATA |               // Test op playing
-                    METADATA)) {
+  if (isPlaying()) {
     timing = millis();                                  // Start time this function
     maxchunk = sizeof(tmpbuff);                         // Reduce byte count for this mp3loop()
     qspace = uxQueueSpacesAvailable( dataqueue)*       // Compute free space in data queue
@@ -453,11 +452,11 @@ void mp3loop() {
     if (timing > max_mp3loop_time)                    // New maximum found?
     {
       max_mp3loop_time = timing;                       // Yes, set new maximum
-      dbgprint("Duration mp3loop %d", timing);       // and report it
+      ardprintf("Duration mp3loop %d", timing);       // and report it
     }
   }
   if (datamode == STOPREQD) {                          // STOP requested?
-    dbgprint("STOP requested");
+    ardprintf("STOP requested");
     stop_mp3client();                                 // Disconnect if still connected
     chunked = false;                                   // Not longer chunked
     datacount = 0;                                     // Reset datacount
@@ -473,13 +472,13 @@ void mp3loop() {
     } else {
       host = readhostfrompref(newpreset);    // Lookup preset in preferences
       chomp(host);                                  // Get rid of part after "#"
-      dbgprint("New preset/file requested (%d) from %s",
+      ardprintf("New preset/file requested (%d) from %s",
                  newpreset, host.c_str());
       if (host != "") {                                // Preset in ini-file?
         hostreq = true;                                 // Force this station as new preset
       } else {
         // This preset is not available, return to preset 0, will be handled in next mp3loop()
-        dbgprint("No host for this preset");
+        ardprintf("No host for this preset");
         newpreset = 0;                        // Wrap to first station
       }
     }

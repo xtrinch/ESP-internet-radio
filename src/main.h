@@ -1,7 +1,6 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include <Arduino.h>
 #include "vs1053.h"
 #include "common.h"
 #include "tft-ili9341.h"
@@ -19,7 +18,6 @@
 // Number of entries in the queue
 #define QSIZ 400
 
-#include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
 #include <SPI.h>
@@ -30,11 +28,9 @@
 
 extern int16_t           currentpreset;                   // Preset station playing
 extern int16_t           newpreset;                       // Preset station playing
-extern int8_t            playing;                     // 1 if radio is playing (for MQTT)
-extern IRrecv            IrReceiver;
 
-const char* analyzeCmd(const char* str);
-const char* analyzeCmd(const char* par, const char* val);
+const char* changeState(const char* str);
 void queuefunc(int func);
+bool isPlaying();
 
 #endif

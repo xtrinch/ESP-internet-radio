@@ -54,11 +54,10 @@ void        claimSPI(const char* p);                // Claim SPI bus for exclusi
 void        releaseSPI();                              // Release the claim
 bool        setupWiFi();
 void        timer100();
+const char* changeState(const char* par, const char* val);
 
 // The object for the MP3 player
 VS1053* vs1053player;
-
-IRrecv IrReceiver(IR_PIN);
 
 // Global variables
 TaskHandle_t      maintask;                            // Taskhandle for main task
@@ -70,14 +69,13 @@ QueueHandle_t     spfqueue;                            // Queue for special func
 int16_t           currentpreset = -1;                  // Preset station playing
 int16_t           newpreset = 0;                       // Preset station playing
 bool              NetworkFound = false;                // True if WiFi network connected
-int8_t            playing = 0;                         // 1 if radio is playing (for MQTT)
 
 void setup() {
   Serial.begin(115200);                              // For debug
   Serial.println();
 
   // Print some memory and sketch info
-  dbgprint("Starting ESP32-radio running on CPU %d at %d MHz. Free memory %d",
+  ardprintf("Starting ESP32-radio running on CPU %d at %d MHz. Free memory %d",
              xPortGetCoreID(),
              ESP.getCpuFreqMHz(),
              ESP.getFreeHeap());                       // Normally about 170 kB
@@ -89,10 +87,7 @@ void setup() {
 
   vs1053player = new VS1053(VS_CS_PIN, VS_DCS_PIN, VS_DREQ_PIN, -1, -1);
   
-  if (IR_PIN >= 0) {
-    dbgprint("Enable pin %d for IR", IR_PIN);
-    IrReceiver.enableIRIn();  // Start the receiver
-  }
+  setupIR();
 
   if (tft_bl_pin >= 0) {                      // Backlight for TFT control?
     pinMode(tft_bl_pin, OUTPUT);           // Yes, enable output
@@ -159,11 +154,11 @@ void claimSPI(const char* p ) {
 
   while(xSemaphoreTake(SPIsem, ctry)!= pdTRUE ) {    // Claim SPI bus
     if (count++ > 25 ) {
-      dbgprint("SPI semaphore not taken within %d ticks by CPU %d, id %s",
+      ardprintf("SPI semaphore not taken within %d ticks by CPU %d, id %s",
                  count * ctry,
                  xPortGetCoreID(),
                  p);
-      dbgprint("Semaphore is claimed by %s", old_id);
+      ardprintf("Semaphore is claimed by %s", old_id);
     } if (count >= 100 ) {
       return;                                              // Continue without semaphore
     }
@@ -189,7 +184,7 @@ void IRAM_ATTR timer10sec() {
   static uint32_t oldtotalcount = 7321;          // Needed for change detection
   uint32_t        bytesplayed;                   // Bytes send to MP3 converter
 
-  if (datamode & (INIT | HEADER | DATA | METADATA)) {
+  if (isPlaying()) {
     bytesplayed = totalcount - oldtotalcount;   // Nunber of bytes played in the 10 seconds
     oldtotalcount = totalcount;                 // Save for comparison in next cycle
     if (bytesplayed != 0) {                     // Still playing?
@@ -224,7 +219,7 @@ bool setupWiFi() {
   char password[60] = CFG_WIFI_PASSWORD;
 
   WiFi.begin(ssid, password);
-  dbgprint("Station: Connecting to %s", ssid);
+  ardprintf("Station: Connecting to %s", ssid);
 
   while (WiFi.status() != WL_CONNECTED && wifiRetriesLeft > 0) {
     delay(100);
@@ -232,32 +227,32 @@ bool setupWiFi() {
   }
 
   if (wifiRetriesLeft <= 0 || WiFi.status() != WL_CONNECTED) {
-    dbgprint("Station: Could not connect to WiFi.");
+    ardprintf("Station: Could not connect to WiFi.");
     return false;
   }
   
-  dbgprint("Station: Connected to WiFi");
+  ardprintf("Station: Connected to WiFi");
   return true;
 }
 
 // Handling of the various commands from remote webclient, Serial or MQTT.           
 // Version for handling string with: <parameter>=<value>            
-const char* analyzeCmd(const char* str )
+const char* changeState(const char* str )
 {
   char strCpy [30];                              // make a copy, we shouldn't write into arguments
   strncpy(strCpy, str, 30);
 
   char*        value;                          // Points to value after equalsign in command
-  const char*  res;                            // Result of analyzeCmd
+  const char*  res;                            // Result of changeState
 
   value = strstr(strCpy, "=");                  // See if command contains a "="
   if (value) {
     *value = '\0';                             // Separate command from value
-    res = analyzeCmd(str, value + 1);        // Analyze command and handle it
+    res = changeState(str, value + 1);        // Analyze command and handle it
     *value = '=';                              // Restore equal sign
   }
   else {
-    res = analyzeCmd(str, "0");              // No value, assume zero
+    res = changeState(str, "0");              // No value, assume zero
   }
   return res ;
 }
@@ -273,7 +268,7 @@ const char* analyzeCmd(const char* str )
 //   station    = <mp3 stream>              // Select new station (will not be saved)
 //   stop                                   // Stop playing         
 //   resume                                 // Resume playing       
-const char* analyzeCmd(const char* par, const char* val )
+const char* changeState(const char* par, const char* val )
 {
   String             argument;                      // Argument as string
   String             value;                         // Value of an argument as a string
@@ -295,16 +290,16 @@ const char* analyzeCmd(const char* par, const char* val )
   ivalue = abs(ivalue);                           // Make positive
   if (value.length()) {
     tmpstr = value;                                 // Make local copy of value
-    dbgprint("Command: %s with parameter %s",
+    ardprintf("Command: %s with parameter %s",
                argument.c_str(), tmpstr.c_str());
   } else {
-    dbgprint("Command: %s (without parameter)",
+    ardprintf("Command: %s (without parameter)",
                argument.c_str());
   }
 
   if (argument.indexOf("ir_")>= 0) {        // Ir setting? Do not handle here
   } else if (argument.indexOf("preset")>= 0) {     // (UP/DOWN)Preset station?
-    dbgprint("%s", val);
+    ardprintf("%s", val);
     if (strcmp(val, "prev") == 0) {                                // Relative argument?
       if (currentpreset - 1 >= 0) {
         newpreset = currentpreset - 1;
@@ -354,14 +349,12 @@ void playtask(void * parameter) {
           totalcount += sizeof(inchunk.buf);                       // Count the bytes
           break;
         case QSTARTSONG:
-          playing = 1;                                        // Status for MQTT
           claimSPI("startsong");                                // Claim SPI bus
           vs1053player->startSong();                               // START, start player
           releaseSPI();                                            // Release SPI bus
           break;
         case QSTOPSONG:
           request_update();
-          playing = 0;                                        // Status for MQTT
           claimSPI("stopsong");                                 // Claim SPI bus
           vs1053player->setVolume(0);                           // Mute
           vs1053player->stopSong();                                // STOP, stop player
@@ -391,4 +384,8 @@ void spftask(void * parameter) {
     // highly necessary, as wi-fi will intermittently stop working without it!
     vTaskDelay(100 / portTICK_PERIOD_MS);                       // Pause for a short time
   }
+}
+
+bool isPlaying() {
+  return datamode & (INIT | HEADER | DATA | METADATA);
 }

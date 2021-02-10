@@ -91,10 +91,10 @@ bool VS1053::testComm ( const char *header ) {
   const uint16_t vstype[] = { 1001, 1011, 1002, 1003,   // Possible chip versions
                               1053, 1033, 0000, 1103 } ;
   
-  dbgprint ( header ) ;                                 // Show a header
+  ardprintf ( header ) ;                                 // Show a header
   if ( !digitalRead ( dreq_pin ) )
   {
-    dbgprint ( "VS1053 not properly installed!" ) ;
+    ardprintf ( "VS1053 not properly installed!" ) ;
     // Allow testing without the VS1053 module
     pinMode ( dreq_pin,  INPUT_PULLUP ) ;               // DREQ is now input with pull-up
     return false ;                                      // Return bad result
@@ -114,7 +114,7 @@ bool VS1053::testComm ( const char *header ) {
     r2 = read_register ( SCI_VOL ) ;                    // Read back a second time
     if  ( r1 != r2 || i != r1 || i != r2 )              // Check for 2 equal reads
     {
-      dbgprint ( "VS1053 SPI error. SB:%04X R1:%04X R2:%04X", i, r1, r2 ) ;
+      ardprintf ( "VS1053 SPI error. SB:%04X R1:%04X R2:%04X", i, r1, r2 ) ;
       cnt++ ;
       delay ( 10 ) ;
     }
@@ -124,7 +124,7 @@ bool VS1053::testComm ( const char *header ) {
   r1 = ( read_register ( SCI_STATUS ) >> 4 ) & 0x7 ;    // Read status to get the version
   if ( r1 !=  4 )                                       // Version 4 is a genuine VS1053
   {
-    dbgprint ( "This is not a VS1053, "                 // Report the wrong chip
+    ardprintf ( "This is not a VS1053, "                 // Report the wrong chip
                "but a VS%d instead!",
                vstype[r1] ) ;
     okay = false ;
@@ -176,7 +176,7 @@ void VS1053::begin() {
     // delay ( 10 ) ;
     // await_data_request() ;
     // endFillByte = wram_read ( 0x1E06 ) & 0xFF ;
-    // dbgprint ( "endFillByte is %X", endFillByte ) ;
+    // ardprintf ( "endFillByte is %X", endFillByte ) ;
     // //printDetails ( "After last clocksetting" ) ;
     // delay ( 100 ) ;
   // }
@@ -246,7 +246,7 @@ void VS1053::stopSong() {
     if ( ( modereg & _BV ( SM_CANCEL ) ) == 0 )         // SM_CANCEL will be cleared when finished
     {
       sdi_send_fillers ( 2052 ) ;
-      dbgprint ( "Song stopped correctly after %d msec", i * 10 ) ;
+      ardprintf ( "Song stopped correctly after %d msec", i * 10 ) ;
       return ;
     }
     delay ( 10 ) ;
@@ -264,9 +264,9 @@ void VS1053::printDetails ( const char *header ) {
   uint16_t     regbuf[16] ;
   uint8_t      i ;
 
-  dbgprint ( header ) ;
-  dbgprint ( "REG   Contents" ) ;
-  dbgprint ( "---   -----" ) ;
+  ardprintf ( header ) ;
+  ardprintf ( "REG   Contents" ) ;
+  ardprintf ( "---   -----" ) ;
   for ( i = 0 ; i <= SCI_num_registers ; i++ )
   {
     regbuf[i] = read_register ( i ) ;
@@ -274,7 +274,7 @@ void VS1053::printDetails ( const char *header ) {
   for ( i = 0 ; i <= SCI_num_registers ; i++ )
   {
     delay ( 5 ) ;
-    dbgprint ( "%3X - %5X", i, regbuf[i] ) ;
+    ardprintf ( "%3X - %5X", i, regbuf[i] ) ;
   }
 }
 

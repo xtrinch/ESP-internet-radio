@@ -1,13 +1,15 @@
 # ESP32-internet-radio
 
-Internet radio station using an ESP32, VS1053 module, a TFT ILI9341 screen and an IR sensor.
+Internet radio station using an ESP32, VS1053 module, a TFT ILI9341 screen with an XPT2046 touch controller and an IR 1838 sensor.
 
 Based on https://github.com/Edzelf/Esp-radio but heavily modified.
 
 All configuration, including station presets are hardcoded.
 
-Interaction with the radio happens via the buttons on the ILI9341's touch screen and the IR remote (to be done!). 
-Supports starting, stopping, going to next or previous station.
+Interaction with the radio happens via the buttons on the ILI9341's touch screen and the IR remote. 
+You should be able to use any remote, as long as you configure the right keys. 
+
+Controls support starting, stopping, going to next or previous station.
 
 Make sure you upload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
 
@@ -16,6 +18,11 @@ The following libraries are used to make this work:
   - `bodmer/TFT_eSPI`
   - `PaulStoffregen/XPT2046_Touchscreen`
   - `z3t0/IRremote`
+
+SPI bus is shared by the TFT LCD, the touch controller and the the VS1053.
+
+Built with `platform.io`. 
+Want to use it with the arduino IDE? You should be able to with slight modifications to the file structure, but you should really just use platform.io, it's far superior ;) 
 
 ## Usage
 
