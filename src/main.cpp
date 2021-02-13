@@ -52,7 +52,7 @@ void        playtask(void * parameter);             // Task to play the stream
 void        spftask(void * parameter);              // Task for special functions
 void        claimSPI(const char* p);                // Claim SPI bus for exclusive access
 void        releaseSPI();                              // Release the claim
-bool        setupWiFi();
+bool        connectToWifi();
 void        timer100();
 const char* changeState(const char* par, const char* val);
 
@@ -93,17 +93,14 @@ void setup() {
     pinMode(TFT_BL, OUTPUT);           // Yes, enable output
   }
   blset(true);                                       // Enable backlight (if configured)
-  WiFi.disconnect();                                    // After restart router could still
-  delay(500);                                        // keep old connection
-  WiFi.mode(WIFI_STA);                               // This ESP is a station
-  delay(500);                                        // ??
-  WiFi.persistent(false);                            // Do not save SSID and password
+
+  connectionSetup();
 
   vs1053player->begin();                                // Initialize VS1053 player
   // vs1053player->switchToMp3Mode();
 
   delay(10);
-  NetworkFound = setupWiFi();                           // Connect to WiFi network
+  NetworkFound = connectToWifi();                           // Connect to WiFi network
   if (!NetworkFound) {                                  // OTA and MQTT only if Wifi network found
     currentpreset = -1;               // No network: do not start radio
   }
@@ -209,29 +206,6 @@ void IRAM_ATTR timer100() {
       }
     }
   }
-}
-
-bool setupWiFi() {
-  int wifiRetriesLeft = 50;
-
-  char ssid[60] = CFG_WIFI_SSID;
-  char password[60] = CFG_WIFI_PASSWORD;
-
-  WiFi.begin(ssid, password);
-  ardprintf("Station: Connecting to %s", ssid);
-
-  while (WiFi.status() != WL_CONNECTED && wifiRetriesLeft > 0) {
-    delay(100);
-    wifiRetriesLeft -= 1;
-  }
-
-  if (wifiRetriesLeft <= 0 || WiFi.status() != WL_CONNECTED) {
-    ardprintf("Station: Could not connect to WiFi.");
-    return false;
-  }
-  
-  ardprintf("Station: Connected to WiFi");
-  return true;
 }
 
 // Handling of the various commands from remote webclient, Serial or MQTT.           

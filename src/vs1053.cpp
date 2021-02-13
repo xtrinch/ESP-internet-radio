@@ -239,7 +239,10 @@ void VS1053::stopSong() {
   output_enable ( false ) ;                             // Disable amplifier through shutdown pin(s)
   delay ( 10 ) ;
   write_register ( SCI_MODE, _BV ( SM_SDINEW ) | _BV ( SM_CANCEL ) ) ;
-  for ( i = 0 ; i < 20 ; i++ )
+
+  // TODO: sometimes gets stuck here
+  //  for ( i = 0 ; i < 20 ; i++ )
+  for ( i = 0 ; i < 200 ; i++ )
   {
     sdi_send_fillers ( 32 ) ;
     modereg = read_register ( SCI_MODE ) ;              // Read mode status

@@ -8,13 +8,8 @@
 #include "ir.h"
 #include "stream-mp3.h"
 #include <IRremote.h>
+#include "connection.h"
 
-// macro to string expansion for env variables
-#define xstr(s) strs(s)
-#define strs(s) #s
-
-#define CFG_WIFI_SSID xstr(WIFI_SSID)
-#define CFG_WIFI_PASSWORD xstr(WIFI_PASSWORD)
 // Number of entries in the queue
 #define QSIZ 400
 

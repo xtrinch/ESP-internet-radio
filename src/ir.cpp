@@ -18,12 +18,14 @@ void scanIR()
       // wake up the screen if IR command is received
       blset(true);
 
-      // Print a short summary of received data
-      IrReceiver.printIRResultShort(&Serial);
-      if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-        // We have an unknown protocol, print more info
-        IrReceiver.printIRResultRawFormatted(&Serial, true);
-      }
+      // DEBUG data
+      // // Print a short summary of received data
+      // IrReceiver.printIRResultShort(&Serial);
+      // if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
+      //   // We have an unknown protocol, print more info
+      //   IrReceiver.printIRResultRawFormatted(&Serial, true);
+      // }
+      
       IrReceiver.resume(); // Enable receiving of the next value
       
       // if command received is a repeat command
