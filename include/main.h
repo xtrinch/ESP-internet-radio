@@ -9,6 +9,7 @@
 #include "stream-mp3.h"
 #include <IRremote.h>
 #include "connection.h"
+#include "connection-mqtt.h"
 
 // Number of entries in the queue
 #define QSIZ 400

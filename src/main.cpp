@@ -93,8 +93,15 @@ void setup() {
     pinMode(TFT_BL, OUTPUT);           // Yes, enable output
   }
   blset(true);                                       // Enable backlight (if configured)
+  
+  #ifdef MQTT_ENABLED
+  mqttSetup();
+  #endif
 
+  // setup wifi
   connectionSetup();
+
+  configSetup();
 
   vs1053player->begin();                                // Initialize VS1053 player
   // vs1053player->switchToMp3Mode();
@@ -142,19 +149,19 @@ void loop()
 // If the semaphore cannot be claimed within the time-out period, the function continues without
 // claiming the semaphore.  This is incorrect but allows debugging. 
 void claimSPI(const char* p ) {
-  const              TickType_t ctry = 10;                // Time to wait for semaphore
   uint32_t           count = 0;                           // Wait time in ticks
   static const char* old_id = "none";                     // ID that holds the bus
 
-  while(xSemaphoreTake(SPIsem, ctry)!= pdTRUE ) {    // Claim SPI bus
-    if (count++ > 25 ) {
+  while(xSemaphoreTake(SPIsem, (TickType_t) 10) != pdTRUE) {    // Claim SPI bus, block for 10 ticks
+    if (count++ > 50 ) {
       ardprintf("SPI semaphore not taken within %d ticks by CPU %d, id %s",
-                 count * ctry,
+                 count * 10,
                  xPortGetCoreID(),
                  p);
       ardprintf("Semaphore is claimed by %s", old_id);
-    } if (count >= 100 ) {
-      return;                                              // Continue without semaphore
+    } if (count >= 200 ) {
+      // restart, there is no way out of this
+      ESP.restart();
     }
   }
   old_id = p;                                              // Remember ID holding the semaphore
@@ -162,7 +169,9 @@ void claimSPI(const char* p ) {
 
 // Free the the SPI bus.  Uses FreeRTOS semaphores.                 
 void releaseSPI() {
-  xSemaphoreGive(SPIsem);                            // Release SPI bus
+  if (xSemaphoreGive(SPIsem) != pdTRUE) {
+    ardprintf("Error releasing SPI.");
+  }
 }
 
 // Queue a special function for the play task.                      
@@ -315,16 +324,15 @@ void playtask(void * parameter) {
       }
       switch(inchunk.datatyp) {                                   // What kind of chunk?
         case QDATA:
-          claimSPI("chunk");                                    // Claim SPI bus
-          vs1053player->playChunk(inchunk.buf,                    // DATA, send to player
-                                    sizeof(inchunk.buf));
-          releaseSPI();                                            // Release SPI bus
-          totalcount += sizeof(inchunk.buf);                       // Count the bytes
+          claimSPI("chunk");                                         // Claim SPI bus
+          vs1053player->playChunk(inchunk.buf, sizeof(inchunk.buf)); // DATA, send to player
+          releaseSPI();                                              // Release SPI bus
+          totalcount += sizeof(inchunk.buf);                         // Count the bytes
           break;
         case QSTARTSONG:
-          claimSPI("startsong");                                // Claim SPI bus
-          vs1053player->startSong();                               // START, start player
-          releaseSPI();                                            // Release SPI bus
+          claimSPI("startsong");                                     // Claim SPI bus
+          vs1053player->startSong();                                 // START, start player
+          releaseSPI();                                              // Release SPI bus
           break;
         case QSTOPSONG:
           request_update();

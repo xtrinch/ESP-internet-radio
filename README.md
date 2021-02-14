@@ -4,7 +4,8 @@ Internet radio station using an ESP32, VS1053 module, a TFT ILI9341 screen with 
 
 Based on https://github.com/Edzelf/Esp-radio but heavily modified.
 
-All configuration, including station presets are hardcoded.
+All configuration, including station presets are hardcoded (although they can optionally be configured via MQTT).
+You can change default values in `config.cpp`.
 
 Interaction with the radio happens via the buttons on the ILI9341's touch screen and the IR remote. 
 You should be able to use any remote, as long as you configure the right keys. 
@@ -48,3 +49,47 @@ Example wiring:
 | VCC 5 V  | -      | pin 6 VCC                        | pin 9 5V            |  Power supply              |
 | EN       | -      | pin 1 RST                        | pin 3 XRST          |  -                         |
 
+## Optional MQTT support
+
+MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch (see `import-env.example.py`).
+One upstream and one downstream topic is required.
+
+Server can send commands in the following format:
+
+```
+{
+  data: {
+    type: 'config' | 'config-request',
+    payload: {
+      presets: [
+        "preset1.com",
+        "preset2.com"
+      ]
+    }
+  }
+}
+```
+
+Types:
+- `config-request`: server requests config
+- `config`: server sends config in payload
+
+ESP responds with the same format:
+
+```
+Expects json in format:
+{
+  data: {
+    type: 'config',
+    payload: {
+      presets: [
+        "preset1.com",
+        "preset2.com"
+      ]
+    }
+  }
+}
+```
+
+Types:
+- `config`: ESP sends config upstream

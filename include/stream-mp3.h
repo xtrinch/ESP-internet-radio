@@ -5,6 +5,7 @@
 #include "common.h"
 #include <base64.h>
 #include "main.h"
+#include "config.h"
 
 // Size of metaline buffer
 #define METASIZ 1024
@@ -32,7 +33,6 @@ extern QueueHandle_t     dataqueue;                           // Queue for mp3 d
 extern bool              hostreq;                     // Request for new host
 extern String            icystreamtitle;                      // Streamtitle from metadata
 extern String            icyname;                             // Icecast station name
-extern char presets[12][100];
 
 void        stop_mp3client ();
 void        showstreamtitle(const char* ml);
