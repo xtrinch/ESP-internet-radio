@@ -1,11 +1,11 @@
 #include "main.h"
 
 // Forward declaration and prototypes of various functions.         
-void        playtask(void * parameter);             // Task to play the stream
-void        spftask(void * parameter);              // Task for special functions
-void        claimSPI(const char* p);                // Claim SPI bus for exclusive access
-void        releaseSPI();                           // Release the claim
-void        timer100();
+void playtask(void * parameter);             // Task to play the stream
+void spftask(void * parameter);              // Task for special functions
+void claimSPI(const char* p);                // Claim SPI bus for exclusive access
+void releaseSPI();                           // Release the claim
+void timer100();
 void changeState(const char* par, const char* val);
 
 // The object for the MP3 player
@@ -22,7 +22,7 @@ int16_t           currentpreset = -1;                  // Preset station playing
 int16_t           newpreset = 0;                       // Preset station playing
 
 void setup() {
-  Serial.begin(115200);                              // For debug
+  Serial.begin(115200);                        
   while(!Serial);
 
   // Print some memory and sketch info
@@ -56,11 +56,11 @@ void setup() {
   // setup nvs config
   configSetup();
 
-  vs1053player->begin();                                // Initialize VS1053 player
-  // vs1053player->switchToMp3Mode();
+  // Initialize VS1053 player
+  vs1053player->begin();                                
 
-  if (!WiFi.isConnected()) {                                  // OTA and MQTT only if Wifi network found
-    currentpreset = -1;               // No network: do not start radio
+  if (!WiFi.isConnected()) {                                
+    currentpreset = -1;                                 // No network: do not start radio
   }
   hw_timer = timerBegin(0, 80, true);                   // User 1st timer with prescaler 80
   timerAttachInterrupt(hw_timer, &timer100, true);      // Call hw_timer100() on hw_timer alarm
@@ -68,8 +68,8 @@ void setup() {
   timerAlarmEnable(hw_timer);                           // Enable the timer
 
   outchunk.datatyp = QDATA;                             // This chunk dedicated to QDATA
-  dataqueue = xQueueCreate(QSIZ,                        // Create queue for communication
-                             sizeof(qdata_struct));
+  dataqueue = xQueueCreate(QSIZ, sizeof(qdata_struct)); // Create queue for communication
+  
   xTaskCreatePinnedToCore (
     playtask,                                             // Task to play data in dataqueue.
     "Playtask",                                           // name of task.
@@ -88,8 +88,7 @@ void setup() {
 }
 
 // Main loop of the program.                                        
-void loop()
-{
+void loop() {
   mp3loop();                                       // Do mp3 related actions
   scanIR();                                        // See if IR input
   mp3loop();                                       // Do more mp3 related actions
@@ -98,7 +97,7 @@ void loop()
 // Claim the SPI bus.  Uses FreeRTOS semaphores.                    
 // If the semaphore cannot be claimed within the time-out period, the function continues without
 // claiming the semaphore.  This is incorrect but allows debugging. 
-void claimSPI(const char* p ) {
+void claimSPI(const char* p) {
   uint32_t           count = 0;                           // Wait time in ticks
   static const char* old_id = "none";                     // ID that holds the bus
 
@@ -169,8 +168,7 @@ void IRAM_ATTR timer100() {
 
 // Handling of the various commands from remote webclient, Serial or MQTT.           
 // Version for handling string with: <parameter>=<value>            
-void changeState(const char* str )
-{
+void changeState(const char* str) {
   char strCpy [30];                              // make a copy, we shouldn't write into arguments
   strncpy(strCpy, str, 30);
 
