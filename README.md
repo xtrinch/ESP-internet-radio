@@ -63,7 +63,7 @@ Server can send commands downstream in the following format:
 {
   data: {
     type: 'config' | 'config-request',
-    payload: {
+    payload: { // optional
       presets: [
         "preset1.com",
         "preset2.com"
@@ -85,7 +85,7 @@ ESP responds upstream with the same format:
 {
   data: {
     type: 'config' | 'ping',
-    payload: {
+    payload: { // optional
       presets: [
         "preset1.com",
         "preset2.com"
