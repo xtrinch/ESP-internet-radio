@@ -45,6 +45,8 @@ To get started, copy `import_env.example.py` to `import_env.py` and fill in your
 
 Upload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
 
+Calibrate your screen - you will find the calibrate function within `tft-ili9341.cpp` file. Paste the calibration values as instructed.
+
 ### Wiring
 
 Pins are fully configurable via `import_env.py`. 

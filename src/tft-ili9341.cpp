@@ -56,18 +56,18 @@ bool refreshDisplay()
         tft.convertRawXY(&x, &y);
         // tft.drawCircle(x, y, 1, TFT_WHITE);
         last_interrupt_time = millis();
-        // ardprintf("tch: %d %d", x, y);
+        ardprintf("tch: %d %d", x, y);
         // if x on icon 120,60 with wxh 32x32, we use a safety safety margin of 10 on sides
-        if (x > 120 && x < 190 && y < 200 && y > 160) {
+        if (x > 120 && x < 190 && y < 210 && y > 160) {
           // request stop or play
           if (!isPlaying()) {
             changeState("resume");
           } else {
             changeState("stop");
           }
-        } else if (x > 50 && x < 110 && y < 200 && y > 160) {
+        } else if (x > 50 && x < 110 && y < 210 && y > 160) {
           changeState("preset=prev");
-        } else if (x > 230 && x < 290 && y < 200 && y > 160) {
+        } else if (x > 220 && x < 290 && y < 210 && y > 160) {
           changeState("preset=next");
         }
       }
@@ -77,6 +77,8 @@ bool refreshDisplay()
   if (!update_req) {
     return false;  
   }
+
+  // x:0, y:0 is top left corner of screen
 
   // account for border margins
   sprite.createSprite(width-40, height-40);
@@ -101,13 +103,13 @@ bool refreshDisplay()
 
   // stop/start icon
   if (datamode == STOPPED) {
-    sprite.fillTriangle(120, 160, 150, 175, 120, 190, TFT_GREEN);
+    sprite.fillTriangle(120, 160, 150, 175, 120, 190, TFT_YELLOW);
   } else {
     sprite.fillRect(120, 160, 32, 32, TFT_RED); 
   }
 
   // preset=next icon
-  sprite.fillRect(207, 160, 5, 32, TFT_YELLOW);
+  sprite.fillRect(207, 160, 5, 32, TFT_GREEN);
   sprite.fillTriangle(216, 160, 246, 175, 216, 190, TFT_YELLOW);
 
   update_req = false;  // Reset request
@@ -119,15 +121,16 @@ bool refreshDisplay()
 
 bool display_begin()
 {
-  SPIFFS.begin(); // Init flash filesystem
+  SPIFFS.begin();                               // Init flash filesystem
   ts.begin(SPI);
   ts.setRotation(3);
-  tft.begin();                                                    // Init TFT interface
+  tft.begin();                                  // Init TFT interface
 
-  tft.setRotation(3);                            // Use landscape format
+  tft.setRotation(3);                           // Use landscape format
   tft.fillScreen(BLACK);                        // Clear screen
   tft.setTextColor(WHITE);                      // Info in white
 
+  // make sure we're not pixelated
   sprite.setColorDepth(8);
 
   // Calibrate the touch screen and retrieve the scaling factors
@@ -137,18 +140,18 @@ bool display_begin()
   tft.setTouch(calData);
   sprite.loadFont(SMOOTH_FONT_1);
 
-  return true ;
+  return true;
 }
 
 // Enable or disable the TFT backlight if configured.               
 // May be called from interrupt level.                              
 void IRAM_ATTR blset(bool enable)
 {
-  if (TFT_BL >= 0) {                     // Backlight for TFT control?
+  if (TFT_BL >= 0) {                   // Backlight for TFT control?
     digitalWrite(TFT_BL, enable);      // Enable/disable backlight
   }
   if (enable) {
-    bltimer = 0;                                       // Reset counter backlight time-out
+    bltimer = 0;                       // Reset counter backlight time-out
   }
 }
 
