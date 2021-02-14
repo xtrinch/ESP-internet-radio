@@ -36,8 +36,10 @@ uint32_t          max_mp3loop_time = 0;                // To check max handling 
 QueueHandle_t     dataqueue;                           // Queue for mp3 datastream
 bool              hostreq = false;                     // Request for new host
 uint8_t           tmpbuff[6000];                       // Input buffer for mp3 or data stream 
-String            icystreamtitle;                      // Streamtitle from metadata
-String            icyname;                             // Icecast station name
+
+// forward declarations
+void        showstreamtitle(const char* ml);
+void        stop_mp3client ();
 
 // Parses line with XML data and put result in variable specified by parameter.      
 void xmlparse(String &line, const char *selstr, String &res) {
@@ -149,12 +151,12 @@ void scan_content_length(const char* metalinebf) {
 }
 
 // Connect to the Internet radio server specified by newpreset.     
-bool connecttohost() {
+bool connectToStation() {
   int         inx;                                // Position of ":" in hostname
   uint16_t    port = 80;                          // Port number for host
   String      extension = "/";                    // May be like "/mp3" in "skonto.ls.lv:8002/mp3"
   String      hostwoext = host;                   // Host without extension and portnumber
-  String      auth ;                              // For basic authentication
+  String      auth;                               // For basic authentication
 
   stop_mp3client();                                // Disconnect if still connected
   ardprintf("Connect to new host %s", host.c_str());
@@ -290,7 +292,7 @@ void handlebyte_ch(uint8_t b ) {
           metaint = metaline.substring(12).toInt();   // Found metaint tag, read the value
         }
         else if (lcml.startsWith("icy-name:")) {
-          icyname = metaline.substring(9);            // Get station name
+          String icyname = metaline.substring(9);            // Get station name
           icyname.trim();                             // Remove leading and trailing spaces
           tftset(2, icyname.c_str());                      // Set screen segment bottom part
         }
@@ -387,7 +389,6 @@ void showstreamtitle(const char *ml) {
     streamtitle[sizeof(streamtitle)- 1] = '\0' ;
   }
   // Save for status request from browser and for MQTT
-  icystreamtitle = streamtitle ;
   if (( p1 = strstr(streamtitle, " - "))) { // look for artist/title separator
     p2 = p1 + 3;                              // 2nd part of text at this position
     *p1++ = '\n';                           // Found: replace 3 characters by newline
@@ -482,6 +483,6 @@ void mp3loop() {
   if (hostreq) {                                        // New preset or station?
     hostreq = false ;
     currentpreset = newpreset;                         // Remember current preset
-    connecttohost();                                   // Switch to new host
+    connectToStation();                                   // Switch to new host
   }
 }
