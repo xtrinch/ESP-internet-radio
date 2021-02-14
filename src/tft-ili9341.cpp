@@ -10,8 +10,8 @@ XPT2046_Touchscreen ts(TOUCH_CS, TFT_TOUCH_IRQ_PIN);  // Param 2 - Touch IRQ Pin
 uint16_t width = 320;
 uint16_t height = 240;
 
-String icyName = "";
-String streamTitle = "";
+char icyName[40] = "";
+char currentSong[100] = "";
 
 uint16_t          bltimer = 0;                         // Backlight time-out counter
 bool update_req = false;
@@ -25,14 +25,14 @@ void request_update () {
   update_req = true;                   // and request flag
 }
 
-// Request to display a segment on TFT.  Version for char* and String parameter.     
+// Request to display a segment on TFT    
 void tftset(uint16_t inx, const char *str) {
   switch(inx) {
     case 1:
-      streamTitle = String (str);
+      strncpy(currentSong, str, 100);
       break;
     case 2:
-      icyName = String (str);
+      strncpy(icyName, str, 40);
       break;
   }
   update_req = true;                   // and request flag
@@ -87,14 +87,14 @@ bool refreshDisplay()
   sprite.setTextWrap(false); // do not wrap on width
   sprite.setTextColor (TFT_YELLOW);     
   char displayIcyName[60];
-  snprintf(displayIcyName, 60, "%d: %s", currentpreset, icyName.c_str());
+  snprintf(displayIcyName, 60, "%d: %s", currentpreset, icyName);
   sprite.drawString(displayIcyName, 0, 0);       
 
   // stream title
   sprite.setTextWrap(true); // Wrap on width
   sprite.setTextColor (TFT_WHITE);
-  sprite.drawRect(0, 50, width - 40, 50, TFT_BLACK); // handle overflow of icy name                
-  sprite.drawString(streamTitle, 0, 40);  
+  sprite.drawRect(0, 50, width - 40, 50, TFT_BLACK); // handle overflow of icy name  
+  sprite.drawString(String(currentSong).c_str(), 0, 40);  
 
   // preset=prev icon
   sprite.fillRect(61, 160, 5, 32, TFT_YELLOW);
