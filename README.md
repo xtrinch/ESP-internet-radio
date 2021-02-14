@@ -20,6 +20,9 @@ You should be able to use any remote, as long as you configure the right keys.
 
 Controls support starting, stopping, going to next or previous station.
 
+Library assumes an external amplifier, so the volume is fixed at 90% and the volume control happens at the external amplifier.
+Should you require internal volume control, it should be easy enough to add it.
+
 The following libraries are used to make this work:
 
   - `bodmer/TFT_eSPI`
@@ -38,7 +41,7 @@ Want to use it with the arduino IDE? You should be able to with slight modificat
 
 To get started, copy `import_env.example.py` to `import_env.py` and fill in your pin configuration.
 
-Uupload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
+Upload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
 
 ### Wiring
 
