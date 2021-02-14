@@ -26,8 +26,7 @@ void request_update () {
 }
 
 // Request to display a segment on TFT.  Version for char* and String parameter.     
-void tftset(uint16_t inx, const char *str )
-{
+void tftset(uint16_t inx, const char *str) {
   switch(inx) {
     case 1:
       streamTitle = String (str);

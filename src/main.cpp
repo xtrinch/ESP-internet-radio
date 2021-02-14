@@ -169,12 +169,12 @@ void IRAM_ATTR timer100() {
 // Handling of the various commands from remote webclient, Serial or MQTT.           
 // Version for handling string with: <parameter>=<value>            
 void changeState(const char* str) {
+  ardprintf("Command: %s", str);
+
   char strCpy [30];                              // make a copy, we shouldn't write into arguments
   strncpy(strCpy, str, 30);
 
-  char*        value;                          // Points to value after equalsign in command
-
-  value = strstr(strCpy, "=");                  // See if command contains a "="
+  char* value = strstr(strCpy, "=");                  // See if command contains a "="
   if (value) {
     *value = '\0';                             // Separate command from value
     changeState(str, value + 1);        // Analyze command and handle it
@@ -184,26 +184,16 @@ void changeState(const char* str) {
     changeState(str, "0");              // No value, assume zero
   }
 }
-
-// Handling of the various commands from remote webclient, serial or MQTT.           
-// par holds the parametername and val holds the value.             
-// "wifi_00" and "preset_00" may appear more than once, like wifi_01, wifi_02, etc.  
-// Examples with available parameters:                              
+         
+// changes state of the player; examples:
 //   preset     = 12                        // Select start preset to connect to 
-//   preset     = next                        // Select start preset to connect to     
+//   preset     = next                      // Select start preset to connect to     
 //   preset     = prev                      // Select start preset to connect to     
 //   volume     = 95                        // Percentage between 0 and 100          
-//   station    = <mp3 stream>              // Select new station (will not be saved)
 //   stop                                   // Stop playing         
 //   resume                                 // Resume playing       
 void changeState(const char* argument, const char* value) {
   blset(true);                                    // Enable backlight of TFT
-
-  if (value) {
-    ardprintf("Command: %s with parameter %s", argument, value);
-  } else {
-    ardprintf("Command: %s (without parameter)", argument);
-  }
 
   if (strstr(argument, "preset") != NULL) {          // change preset
     if (strcmp(value, "prev") == 0) {               // preset=prev
