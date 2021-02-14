@@ -19,6 +19,9 @@ The following libraries are used to make this work:
   - `bodmer/TFT_eSPI`
   - `PaulStoffregen/XPT2046_Touchscreen`
   - `z3t0/IRremote`
+  - `marvinroger/async-mqtt-client`
+  - `bblanchon/ArduinoJson`
+  - `TridentTD/TridentTD_ESP32NVS`
 
 SPI bus is shared by the TFT LCD, the touch controller and the the VS1053.
 
