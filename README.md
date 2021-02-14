@@ -68,6 +68,8 @@ Example wiring:
 | VCC 5 V  | -      | pin 6 VCC                        | pin 9 5V            |  Power supply              |
 | EN       | -      | pin 1 RST                        | pin 3 XRST          |  -                         |
 
+![Image](https://github.com/xtrinch/ESP-internet-radio/blob/master/images/wiring.jpg)
+
 ## Optional MQTT support
 
 MQTT support is optionally implemented and can be enabled via `MQTT_ENABLE` switch (see `import-env.example.py`).
