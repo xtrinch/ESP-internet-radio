@@ -55,7 +55,9 @@ MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch
 One upstream and one downstream topic is required. 
 ESP will periodically ping the upstream server to let it know it is available.
 
-Server can send commands in the following format:
+### Upstream
+
+Server can send commands downstream in the following format:
 
 ```
 {
@@ -71,14 +73,15 @@ Server can send commands in the following format:
 }
 ```
 
-Types:
+Command types:
 - `config-request`: server requests config
 - `config`: server sends config in payload
 
-ESP responds with the same format:
+### Downstream
+
+ESP responds upstream with the same format:
 
 ```
-Expects json in format:
 {
   data: {
     type: 'config' | 'ping',
