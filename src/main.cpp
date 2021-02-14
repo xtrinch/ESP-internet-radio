@@ -69,7 +69,7 @@ void setup() {
 
   outchunk.datatyp = QDATA;                             // This chunk dedicated to QDATA
   dataqueue = xQueueCreate(QSIZ, sizeof(qdata_struct)); // Create queue for communication
-  
+
   xTaskCreatePinnedToCore (
     playtask,                                             // Task to play data in dataqueue.
     "Playtask",                                           // name of task.
@@ -196,45 +196,34 @@ void changeState(const char* str) {
 //   station    = <mp3 stream>              // Select new station (will not be saved)
 //   stop                                   // Stop playing         
 //   resume                                 // Resume playing       
-void changeState(const char* par, const char* val) {
-  String             argument;                      // Argument as string
-  String             value;                         // Value of an argument as a string
-  int                ivalue;                        // Value of argument as an integer
-
+void changeState(const char* argument, const char* value) {
   blset(true);                                    // Enable backlight of TFT
-  argument = String(par);                         // Get the argument
-  chomp(argument);                                // Remove comment and useless spaces
 
-  value = String(val);                            // Get the specified value
-  chomp(value);                                   // Remove comment and extra spaces
-  ivalue = value.toInt();                         // Also as an integer
-  ivalue = abs(ivalue);                           // Make positive
-  if (value.length()) {
-    ardprintf("Command: %s with parameter %s", argument.c_str(), value.c_str());
+  if (value) {
+    ardprintf("Command: %s with parameter %s", argument, value);
   } else {
-    ardprintf("Command: %s (without parameter)", argument.c_str());
+    ardprintf("Command: %s (without parameter)", argument);
   }
 
-  if (argument.indexOf("preset") >= 0) {          // change preset
-    ardprintf("%s", val);
-    if (strcmp(val, "prev") == 0) {               // preset=prev
+  if (strstr(argument, "preset") != NULL) {          // change preset
+    if (strcmp(value, "prev") == 0) {               // preset=prev
       if (currentpreset - 1 >= 0) {
         newpreset = currentpreset - 1;
       }
-    } else if (strcmp(val, "next") == 0) {        // preset=next
+    } else if (strcmp(value, "next") == 0) {        // preset=next
       if (currentpreset + 1 < sizeof(presets)/sizeof(presets[0])) {
         newpreset = currentpreset + 1;
       }
     } else {
-      newpreset = ivalue;                          // Otherwise set station
+      newpreset = atoi(value);                          // Otherwise set station
     }
     setdatamode(STOPREQD);                          // Force stop MP3 player
-  } else if (argument == "stop") {                  // (un)Stop requested?
+  } else if (strcmp(argument, "stop") == 0) {                  // (un)Stop requested?
     setdatamode(STOPREQD);                          // Request STOP
-  } else if (argument == "resume") {
+  } else if (strcmp(argument, "resume") == 0) {
     hostreq = true;                                 // Request UNSTOP
   } else {
-    ardprintf("called with illegal parameter: %s", argument.c_str());
+    ardprintf("called with illegal parameter: %s", argument);
   }
   return; 
 }

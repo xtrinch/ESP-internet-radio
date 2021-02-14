@@ -20,20 +20,6 @@ char* ardprintf(const char* format, ... )
   return sbuf;                                       // Return stored string
 }
 
-// Do some filtering on de inputstring:                             
-//  - String comment part (starting with "#").                      
-//  - Strip trailing CR.                                            
-//  - Strip leading spaces.                                         
-//  - Strip trailing spaces.                                        
-void chomp(String &str ) {
-  int   inx;                                        // Index in de input string
-
-  if (( inx = str.indexOf("#")) >= 0) {         // Comment line or partial comment?
-    str.remove(inx);                              // Yes, remove
-  }
-  str.trim();                                        // Remove spaces and CR
-}
-
 // Change the datamode and show in debug for testing.               
 void setdatamode(datamode_t newmode ) {
   // ardprintf("Change datamode from 0x%03X to 0x%03X",

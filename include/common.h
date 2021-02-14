@@ -18,7 +18,6 @@ enum datamode_t { INIT = 0x1, HEADER = 0x2, DATA = 0x4,      // State for datast
 extern datamode_t        datamode;                            // State of datastream
 
 char* ardprintf( const char* format, ...);
-void chomp(String &str);
 void setdatamode(datamode_t newmode);
 
 #define DEBUG 1                            // Debug on/off

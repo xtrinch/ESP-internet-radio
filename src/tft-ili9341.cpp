@@ -109,7 +109,7 @@ bool refreshDisplay()
   }
 
   // preset=next icon
-  sprite.fillRect(207, 160, 5, 32, TFT_GREEN);
+  sprite.fillRect(207, 160, 5, 32, TFT_YELLOW);
   sprite.fillTriangle(216, 160, 246, 175, 216, 190, TFT_YELLOW);
 
   update_req = false;  // Reset request

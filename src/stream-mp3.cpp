@@ -468,7 +468,6 @@ void mp3loop() {
       setdatamode(STOPREQD);                         // Yes, request STOP
     } else {
       host = String(hostFromConfig(newpreset));    // Lookup preset in preferences
-      chomp(host);                                  // Get rid of part after "#"
       ardprintf("New preset/file requested (%d) from %s",
                  newpreset, host.c_str());
       if (host != "") {                                // Preset in ini-file?
