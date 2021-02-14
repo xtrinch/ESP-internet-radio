@@ -6,7 +6,7 @@ void        spftask(void * parameter);              // Task for special function
 void        claimSPI(const char* p);                // Claim SPI bus for exclusive access
 void        releaseSPI();                           // Release the claim
 void        timer100();
-const char* changeState(const char* par, const char* val);
+void changeState(const char* par, const char* val);
 
 // The object for the MP3 player
 VS1053* vs1053player;
@@ -20,7 +20,6 @@ hw_timer_t*       hw_timer = NULL;                     // For timer
 QueueHandle_t     spfqueue;                            // Queue for special functions
 int16_t           currentpreset = -1;                  // Preset station playing
 int16_t           newpreset = 0;                       // Preset station playing
-bool              NetworkFound = false;                // True if WiFi network connected
 
 void setup() {
   Serial.begin(115200);                              // For debug
@@ -170,24 +169,22 @@ void IRAM_ATTR timer100() {
 
 // Handling of the various commands from remote webclient, Serial or MQTT.           
 // Version for handling string with: <parameter>=<value>            
-const char* changeState(const char* str )
+void changeState(const char* str )
 {
   char strCpy [30];                              // make a copy, we shouldn't write into arguments
   strncpy(strCpy, str, 30);
 
   char*        value;                          // Points to value after equalsign in command
-  const char*  res;                            // Result of changeState
 
   value = strstr(strCpy, "=");                  // See if command contains a "="
   if (value) {
     *value = '\0';                             // Separate command from value
-    res = changeState(str, value + 1);        // Analyze command and handle it
+    changeState(str, value + 1);        // Analyze command and handle it
     *value = '=';                              // Restore equal sign
   }
   else {
-    res = changeState(str, "0");              // No value, assume zero
+    changeState(str, "0");              // No value, assume zero
   }
-  return res ;
 }
 
 // Handling of the various commands from remote webclient, serial or MQTT.           
@@ -201,67 +198,47 @@ const char* changeState(const char* str )
 //   station    = <mp3 stream>              // Select new station (will not be saved)
 //   stop                                   // Stop playing         
 //   resume                                 // Resume playing       
-const char* changeState(const char* par, const char* val )
-{
+void changeState(const char* par, const char* val) {
   String             argument;                      // Argument as string
   String             value;                         // Value of an argument as a string
   int                ivalue;                        // Value of argument as an integer
-  static char        reply[180];                    // Reply to client, will be returned
-  String             tmpstr;                        // Temporary for value
 
   blset(true);                                    // Enable backlight of TFT
-  strcpy(reply, "Command accepted");              // Default reply
   argument = String(par);                         // Get the argument
   chomp(argument);                                // Remove comment and useless spaces
-  if (argument.length() == 0)                      // Lege commandline (comment)?
-  {
-    return reply;                                   // Ignore
-  }
+
   value = String(val);                            // Get the specified value
   chomp(value);                                   // Remove comment and extra spaces
-  ivalue = value.toInt();                            // Also as an integer
+  ivalue = value.toInt();                         // Also as an integer
   ivalue = abs(ivalue);                           // Make positive
   if (value.length()) {
-    tmpstr = value;                                 // Make local copy of value
-    ardprintf("Command: %s with parameter %s",
-               argument.c_str(), tmpstr.c_str());
+    ardprintf("Command: %s with parameter %s", argument.c_str(), value.c_str());
   } else {
-    ardprintf("Command: %s (without parameter)",
-               argument.c_str());
+    ardprintf("Command: %s (without parameter)", argument.c_str());
   }
 
-  if (argument.indexOf("ir_")>= 0) {        // Ir setting? Do not handle here
-  } else if (argument.indexOf("preset")>= 0) {     // (UP/DOWN)Preset station?
+  if (argument.indexOf("preset") >= 0) {          // change preset
     ardprintf("%s", val);
-    if (strcmp(val, "prev") == 0) {                                // Relative argument?
+    if (strcmp(val, "prev") == 0) {               // preset=prev
       if (currentpreset - 1 >= 0) {
         newpreset = currentpreset - 1;
       }
-    } else if (strcmp(val, "next") == 0) {
+    } else if (strcmp(val, "next") == 0) {        // preset=next
       if (currentpreset + 1 < sizeof(presets)/sizeof(presets[0])) {
         newpreset = currentpreset + 1;
       }
     } else {
-      newpreset = ivalue;               // Otherwise set station
+      newpreset = ivalue;                          // Otherwise set station
     }
-    setdatamode(STOPREQD);                      // Force stop MP3 player
-    sprintf(reply, "Preset is now %d",            // Reply new preset
-              newpreset);
-  } else if (argument == "stop") {                      // (un)Stop requested?
-    setdatamode(STOPREQD);                      // Request STOP
+    setdatamode(STOPREQD);                          // Force stop MP3 player
+  } else if (argument == "stop") {                  // (un)Stop requested?
+    setdatamode(STOPREQD);                          // Request STOP
   } else if (argument == "resume") {
-    hostreq = true;                               // Request UNSTOP
-  } else if (argument == "status") {                   // Status request
-    if (datamode == STOPPED) {
-      sprintf(reply, "Player stopped");           // Format reply
-    } else {
-      sprintf(reply, "%s - %s", icyname.c_str(),
-                icystreamtitle.c_str());            // Streamtitle from metadata
-    }
+    hostreq = true;                                 // Request UNSTOP
   } else {
-    sprintf(reply, "called with illegal parameter: %s", argument.c_str());
+    ardprintf("called with illegal parameter: %s", argument.c_str());
   }
-  return reply;                                     // Return reply to the caller
+  return; 
 }
 
 // Play stream data from input queue.                               
@@ -270,29 +247,29 @@ const char* changeState(const char* par, const char* val )
 void playtask(void * parameter) {
   while(true) {
     if (xQueueReceive(dataqueue, &inchunk, 5)) {
-      while(!vs1053player->data_request()) {                      // If FIFO is full..
-        vTaskDelay(1);                                          // Yes, take a break
+      while(!vs1053player->data_request()) {                        // If FIFO is full..
+        vTaskDelay(1);                                              // Yes, take a break
       }
-      switch(inchunk.datatyp) {                                   // What kind of chunk?
+      switch(inchunk.datatyp) {                                     // What kind of chunk?
         case QDATA:
-          claimSPI("chunk");                                         // Claim SPI bus
+          claimSPI("chunk");                                         
           vs1053player->playChunk(inchunk.buf, sizeof(inchunk.buf)); // DATA, send to player
-          releaseSPI();                                              // Release SPI bus
+          releaseSPI();                                              
           totalcount += sizeof(inchunk.buf);                         // Count the bytes
           break;
         case QSTARTSONG:
-          claimSPI("startsong");                                     // Claim SPI bus
+          claimSPI("startsong");                                     
           vs1053player->startSong();                                 // START, start player
-          releaseSPI();                                              // Release SPI bus
+          releaseSPI();                                              
           break;
         case QSTOPSONG:
           request_update();
-          claimSPI("stopsong");                                 // Claim SPI bus
-          vs1053player->setVolume(0);                           // Mute
-          vs1053player->stopSong();                                // STOP, stop player
-          releaseSPI();                                            // Release SPI bus
-          while(xQueueReceive(dataqueue, &inchunk, 0));      // Flush rest of queue
-          vTaskDelay(500 / portTICK_PERIOD_MS);                 // Pause for a short time
+          claimSPI("stopsong");                           
+          vs1053player->setVolume(0);                               // Mute
+          vs1053player->stopSong();                                 // STOP, stop player
+          releaseSPI();                                            
+          while(xQueueReceive(dataqueue, &inchunk, 0));             // Flush rest of queue
+          vTaskDelay(500 / portTICK_PERIOD_MS);                     // Pause for a short time
           break;
         default:
           break;
@@ -306,12 +283,12 @@ void playtask(void * parameter) {
 // This task runs on a low priority.                                
 void spftask(void * parameter) {
   while(true) {
-    claimSPI("hspectft");                                 // Yes, claim SPI bus
-    refreshDisplay();                                        // Yes, TFT refresh necessary
-    releaseSPI();                                            // Yes, release SPI bus
-    claimSPI("hspec");                                      // Claim SPI bus
-    vs1053player->setVolume(90);            // Unmute
-    releaseSPI();                                              // Release SPI bus
+    claimSPI("hspectft");                                 
+    refreshDisplay();                                          // Yes, TFT refresh necessary
+    releaseSPI();                                            
+    claimSPI("hspec");                                     
+    vs1053player->setVolume(90);                               // Unmute
+    releaseSPI();                                              
     
     // highly necessary, as wi-fi will intermittently stop working without it!
     vTaskDelay(100 / portTICK_PERIOD_MS);                       // Pause for a short time

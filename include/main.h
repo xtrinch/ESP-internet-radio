@@ -26,7 +26,7 @@
 extern int16_t           currentpreset;                   // Preset station playing
 extern int16_t           newpreset;                       // Preset station playing
 
-const char* changeState(const char* str);
+void changeState(const char* str);
 void queuefunc(int func);
 bool isPlaying();
 
