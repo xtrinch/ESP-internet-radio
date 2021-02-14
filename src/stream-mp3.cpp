@@ -134,7 +134,7 @@ void handleStreamByte(uint8_t b) {
   switch(datamode) {
     case DATA:
       *outqp++ = b ;
-      if (outqp ==(outchunk.buf + sizeof(outchunk.buf))) { // Buffer full?
+      if (outqp == (outchunk.buf + sizeof(outchunk.buf))) { // Buffer full?
         // Send data to playtask queue.  If the buffer cannot be placed within 200 ticks,
         // the queue is full, while the sender tries to send more.  The chunk will be dis-
         // carded it that case.
@@ -160,8 +160,8 @@ void handleStreamByte(uint8_t b) {
       metalinebf[0] = '\0' ;
       // no break;
     case HEADER:
-      if (( b > 0x7F)||                               // Ignore unprintable characters
-          (b == '\r')||                               // Ignore CR
+      if (( b > 0x7F) ||                               // Ignore unprintable characters
+          (b == '\r') ||                               // Ignore CR
           (b == '\0')) {                              // Ignore NULL
         // Yes, ignore
       }
@@ -209,18 +209,15 @@ void handleStreamByte(uint8_t b) {
           }
         }
         metalinebfx = 0;                               // Reset this line
-        if (( LFcount == 2)&& ctseen) {              // Content type seen and a double LF?
-          ardprintf("Switch to DATA, bitrate is %d"     // Show bitrate
-                    ", metaint is %d",                  // and metaint
-                    bitrate, metaint);
+        if ((LFcount == 2) && ctseen) {              // Content type seen and a double LF?
+          ardprintf("Switch to DATA, bitrate is %d, metaint is %d", bitrate, metaint);
           setdatamode(DATA);                         // Expecting data now
           datacount = metaint;                         // Number of bytes before first metadata
           queuefunc(QSTARTSONG);                     // Queue a request to start song
         }
       } else {
         metalinebf[metalinebfx++] = (char)b;           // Normal character, put new char in metaline
-        if (metalinebfx >= METASIZ)                   // Prevent overflow
-        {
+        if (metalinebfx >= METASIZ) {                  // Prevent overflow
           metalinebfx-- ;
         }
         LFcount = 0;                                   // Reset double CRLF detection

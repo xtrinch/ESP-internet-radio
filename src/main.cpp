@@ -38,7 +38,8 @@ void setup() {
   display_begin();
 
   vs1053player = new VS1053(VS_CS_PIN, VS_DCS_PIN, VS_DREQ_PIN, -1, -1);
-  
+  vs1053player->setVolume(90);                               // Unmute
+
   setupIR();
 
   if (TFT_BL >= 0) {                      // Backlight for TFT control?
@@ -242,7 +243,6 @@ void playtask(void * parameter) {
         case QSTOPSONG:
           request_update();
           claimSPI("stopsong");                           
-          vs1053player->setVolume(0);                               // Mute
           vs1053player->stopSong();                                 // STOP, stop player
           releaseSPI();                                            
           while(xQueueReceive(dataqueue, &inchunk, 0));             // Flush rest of queue
@@ -264,7 +264,6 @@ void spftask(void * parameter) {
     refreshDisplay();                                          // Yes, TFT refresh necessary
     releaseSPI();                                            
     claimSPI("hspec");                                     
-    vs1053player->setVolume(90);                               // Unmute
     releaseSPI();                                              
     
     // highly necessary, as wi-fi will intermittently stop working without it!
