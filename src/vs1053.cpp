@@ -250,7 +250,7 @@ void VS1053::stopSong() {
     {
       sdi_send_fillers ( 2052 ) ;
       ardprintf ( "Song stopped correctly after %d msec", i * 10 ) ;
-      return ;
+      return;
     }
     delay ( 10 ) ;
   }

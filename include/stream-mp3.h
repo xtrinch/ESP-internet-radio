@@ -17,14 +17,11 @@ typedef struct qdata_struct
   __attribute__((aligned(4))) uint8_t buf[32];      // Buffer for chunk
 } qdata_struct;
 
-extern int               mbitrate;                            // Measured bitrate
-extern String            host;                                // The URL to connect to or file to play
 extern WiFiClient        mp3client;                           // An instance of the mp3 client, also used for OTA
-extern uint32_t          totalcount;                      // Counter mp3 data
+extern uint32_t          totalcount;                          // Counter mp3 data
 extern qdata_struct      outchunk;                            // Data to queue
 extern qdata_struct      inchunk;                             // Data from queue
 extern QueueHandle_t     dataqueue;                           // Queue for mp3 datastream
-extern bool              hostreq;                     // Request for new host
 
 void        mp3loop();
 

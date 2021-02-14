@@ -13,7 +13,7 @@
 
 enum datamode_t { INIT = 0x1, HEADER = 0x2, DATA = 0x4,      // State for datastream
                   METADATA = 0x8,
-                  STOPREQD = 0x80, STOPPED = 0x100
+                  STOPREQD = 0x80, STOPPED = 0x100, RESUMEREQD = 0x81
                 } ;
 extern datamode_t        datamode;                            // State of datastream
 

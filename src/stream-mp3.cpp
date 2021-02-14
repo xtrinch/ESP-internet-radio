@@ -10,15 +10,13 @@
 //  icy-metaint:32768          - Metadata after 32768 bytes of MP3-data
 //  icy-br:128                 - in kb/sec (for Ogg this is like "icy-br=Quality 2")
 //
-// After a double CRLF is received, the server starts sending mp3- or Ogg-data.  For mp3, this
+// After a double CRLF is received, the server starts sending mp3 - or Ogg-data. For mp3, this
 // data may contain metadata (non mp3) after every "metaint" mp3 bytes.
-// The metadata is empty in most cases, but if any is available the content will be
-// presented on the TFT.
+// If metadata is available the content will be presented on the TFT.
 
 bool              chunked = false;                     // Station provides chunked transfer
 int               chunkcount = 0;                      // Counter for chunked transfer
 int               bitrate;                             // Bitrate in kb/sec
-int               mbitrate;                            // Measured bitrate
 int               metaint = 0;                         // Number of databytes between metadata
 char              metalinebf[METASIZ + 1];             // Buffer for metaline/ID3 tags
 int16_t           metalinebfx;                         // Index for metalinebf
@@ -38,8 +36,8 @@ bool              hostreq = false;                     // Request for new host
 uint8_t           tmpbuff[6000];                       // Input buffer for mp3 or data stream 
 
 // forward declarations
-void        showstreamtitle(const char* ml);
-void        stop_mp3client ();
+void parseCurrentSong(const char* ml);
+void stop_mp3client();
 
 // Parses line with XML data and put result in variable specified by parameter.      
 void xmlparse(String &line, const char *selstr, String &res) {
@@ -142,14 +140,6 @@ bool chkhdrline(const char* str) {
   return false;                                     // End of string without colon
 }
 
-// If the line contains content-length information: set clength (content length counter).       
-void scan_content_length(const char* metalinebf) {
-  if (strstr(metalinebf, "Content-Length")) {       // Line contains content length
-    clength = atoi(metalinebf + 15);                // Yes, set clength
-    ardprintf("Content-Length is %d", clength);      // Show for debugging purposes
-  }
-}
-
 // Connect to the Internet radio server specified by newpreset.     
 bool connectToStation() {
   int         inx;                                // Position of ":" in hostname
@@ -204,7 +194,7 @@ bool connectToStation() {
 
 // Handle the next byte of data from server.                        
 // Chunked transfer encoding aware. Chunk extensions are not supported.              
-void handlebyte_ch(uint8_t b ) {
+void handlebyte_ch(uint8_t b) {
   static int       chunksize = 0;                     // Chunkcount read from stream
   static int       LFcount;                           // Detection of end of header
   static bool      ctseen = false;                    // First line of header seen or not
@@ -212,169 +202,167 @@ void handlebyte_ch(uint8_t b ) {
   if (chunked && (datamode & (DATA | METADATA))) {
     if (chunkcount == 0)  {                           // Expecting a new chunkcount?
       if (b == '\r') {                               // Skip CR
-        return ;
+        return;
       } else if (b == '\n') {                          // LF ?
         chunkcount = chunksize;                      // Yes, set new count
         chunksize = 0;                               // For next decode
-        return ;
+        return;
       }
       // We have received a hexadecimal character.  Decode it and add to the result.
-      b = toupper(b)- '0';                       // Be sure we have uppercase
+      b = toupper(b) - '0';                       // Be sure we have uppercase
       if (b > 9) {
         b = b - 7;                                   // Translate A..F to 10..15
       }
-      chunksize =(chunksize << 4)+ b ;
-      return  ;
+      chunksize = (chunksize << 4) + b ;
+      return;
     }
     chunkcount--;                                    // Update count to next chunksize block
   }
-  if (datamode == DATA) {                            // Handle next byte of MP3/Ogg data
-    *outqp++ = b ;
-    if (outqp ==(outchunk.buf + sizeof(outchunk.buf))) { // Buffer full?
-      // Send data to playtask queue.  If the buffer cannot be placed within 200 ticks,
-      // the queue is full, while the sender tries to send more.  The chunk will be dis-
-      // carded it that case.
-      xQueueSend(dataqueue, &outchunk, 200);       // Send to queue
-      outqp = outchunk.buf;                          // Item empty now
-    }
-    if (metaint) {                                   // No METADATA on Ogg streams or mp3 files
-      if (--datacount == 0) {                        // End of datablock?
-        setdatamode(METADATA);
-        metalinebfx = -1;                            // Expecting first metabyte (counter)
+
+  switch(datamode) {
+    case DATA:
+      *outqp++ = b ;
+      if (outqp ==(outchunk.buf + sizeof(outchunk.buf))) { // Buffer full?
+        // Send data to playtask queue.  If the buffer cannot be placed within 200 ticks,
+        // the queue is full, while the sender tries to send more.  The chunk will be dis-
+        // carded it that case.
+        xQueueSend(dataqueue, &outchunk, 200);       // Send to queue
+        outqp = outchunk.buf;                          // Item empty now
       }
-    }
-    return ;
-  }
-  if (datamode == INIT) {                            // Initialize for header receive
-    ctseen = false;                                  // Contents type not seen yet
-    metaint = 0;                                     // No metaint found
-    LFcount = 0;                                     // For detection end of header
-    bitrate = 0;                                     // Bitrate still unknown
-    ardprintf("Switch to HEADER");
-    setdatamode(HEADER);                           // Handle header
-    totalcount = 0;                                  // Reset totalcount
-    metalinebfx = 0;                                 // No metadata yet
-    metalinebf[0] = '\0' ;
-  }
-  if (datamode == HEADER) {                          // Handle next byte of MP3 header
-    if (( b > 0x7F)||                               // Ignore unprintable characters
-        (b == '\r')||                              // Ignore CR
-        (b == '\0')) {                              // Ignore NULL
-      // Yes, ignore
-    }
-    else if (b == '\n') {                            // Linefeed ?
-      LFcount++;                                     // Count linefeeds
-      metalinebf[metalinebfx] = '\0';                // Take care of delimiter
-      if (chkhdrline(metalinebf)) {                // Reasonable input?
-        ardprintf("Headerline: %s",                   // Show headerline
-                   metalinebf);
-        String metaline = String(metalinebf);      // Convert to string
-        String lcml = metaline;                      // Use lower case for compare
-        lcml.toLowerCase();
-        if (lcml.startsWith("location: http://")) { // Redirection?
-          host = metaline.substring(17);           // Yes, get new URL
-          hostreq = true;                            // And request this one
+      if (metaint) {                                   // No METADATA on Ogg streams or mp3 files
+        if (--datacount == 0) {                        // End of datablock?
+          setdatamode(METADATA);
+          metalinebfx = -1;                            // Expecting first metabyte (counter)
         }
-        if (lcml.indexOf("content-type")>= 0) {    // Line with "Content-Type: xxxx/yyy"
-          ctseen = true;                             // Yes, remember seeing this
-          String ct = metaline.substring(13);      // Set contentstype. Not used yet
-          ct.trim();
-          ardprintf("%s seen.", ct.c_str());
-        }
-        if (lcml.startsWith("icy-br:")) {
-          bitrate = metaline.substring(7).toInt();    // Found bitrate tag, read the bitrate
-          if (bitrate == 0)                         // For Ogg br is like "Quality 2"
-          {
-            bitrate = 87;                            // Dummy bitrate
+      }
+      return;
+      break;
+    case INIT:
+      ctseen = false;                                  // Contents type not seen yet
+      metaint = 0;                                     // No metaint found
+      LFcount = 0;                                     // For detection end of header
+      bitrate = 0;                                     // Bitrate still unknown
+      ardprintf("Switch to HEADER");
+      setdatamode(HEADER);                           // Handle header
+      totalcount = 0;                                  // Reset totalcount
+      metalinebfx = 0;                                 // No metadata yet
+      metalinebf[0] = '\0' ;
+      // no break;
+    case HEADER:
+      if (( b > 0x7F)||                               // Ignore unprintable characters
+          (b == '\r')||                              // Ignore CR
+          (b == '\0')) {                              // Ignore NULL
+        // Yes, ignore
+      }
+      else if (b == '\n') {                            // Linefeed ?
+        LFcount++;                                     // Count linefeeds
+        metalinebf[metalinebfx] = '\0';                // Take care of delimiter
+        if (chkhdrline(metalinebf)) {                // Reasonable input?
+          ardprintf("Headerline: %s",                   // Show headerline
+                    metalinebf);
+          String metaline = String(metalinebf);      // Convert to string
+          String lcml = metaline;                      // Use lower case for compare
+          lcml.toLowerCase();
+          if (lcml.startsWith("location: http://")) { // Redirection?
+            host = metaline.substring(17);           // Yes, get new URL
+            hostreq = true;                            // And request this one
+          }
+          if (lcml.indexOf("content-type")>= 0) {    // Line with "Content-Type: xxxx/yyy"
+            ctseen = true;                             // Yes, remember seeing this
+            String ct = metaline.substring(13);      // Set contentstype. Not used yet
+            ct.trim();
+            ardprintf("%s seen.", ct.c_str());
+          }
+          if (lcml.startsWith("icy-br:")) {
+            bitrate = metaline.substring(7).toInt();    // Found bitrate tag, read the bitrate
+            if (bitrate == 0)                         // For Ogg br is like "Quality 2"
+            {
+              bitrate = 87;                            // Dummy bitrate
+            }
+          }
+          else if (lcml.startsWith ("icy-metaint:")) {
+            metaint = metaline.substring(12).toInt();   // Found metaint tag, read the value
+          }
+          else if (lcml.startsWith("icy-name:")) {
+            String icyname = metaline.substring(9);            // Get station name
+            icyname.trim();                             // Remove leading and trailing spaces
+            tftset(2, icyname.c_str());                      // Set screen segment bottom part
+          }
+          else if (lcml.startsWith("transfer-encoding:")) {
+            // Station provides chunked transfer
+            if (lcml.endsWith("chunked"))
+            {
+              chunked = true;                          // Remember chunked transfer mode
+              chunkcount = 0;                          // Expect chunkcount in DATA
+            }
           }
         }
-        else if (lcml.startsWith ("icy-metaint:")) {
-          metaint = metaline.substring(12).toInt();   // Found metaint tag, read the value
+        metalinebfx = 0;                               // Reset this line
+        if (( LFcount == 2)&& ctseen) {              // Content type seen and a double LF?
+          ardprintf("Switch to DATA, bitrate is %d"     // Show bitrate
+                    ", metaint is %d",                  // and metaint
+                    bitrate, metaint);
+          setdatamode(DATA);                         // Expecting data now
+          datacount = metaint;                         // Number of bytes before first metadata
+          queuefunc(QSTARTSONG);                     // Queue a request to start song
         }
-        else if (lcml.startsWith("icy-name:")) {
-          String icyname = metaline.substring(9);            // Get station name
-          icyname.trim();                             // Remove leading and trailing spaces
-          tftset(2, icyname.c_str());                      // Set screen segment bottom part
+      } else {
+        metalinebf[metalinebfx++] = (char)b;           // Normal character, put new char in metaline
+        if (metalinebfx >= METASIZ)                   // Prevent overflow
+        {
+          metalinebfx-- ;
         }
-        else if (lcml.startsWith("transfer-encoding:")) {
-          // Station provides chunked transfer
-          if (lcml.endsWith("chunked"))
-          {
-            chunked = true;                          // Remember chunked transfer mode
-            chunkcount = 0;                          // Expect chunkcount in DATA
-          }
+        LFcount = 0;                                   // Reset double CRLF detection
+      }
+      return;
+      break;
+    case METADATA:
+      if (metalinebfx < 0) {                           // First byte of metadata?
+        metalinebfx = 0;                               // Prepare to store first character
+        metacount = b * 16 + 1;                        // New count for metadata including length byte
+        if (metacount > 1 ) {
+          ardprintf("Metadata block %d bytes",
+                    metacount - 1);                   // Most of the time there are zero bytes of metadata
+        }
+      } else {
+        metalinebf[metalinebfx++] = (char)b;           // Normal character, put new char in metaline
+        if (metalinebfx >= METASIZ) {                  // Prevent overflow
+          metalinebfx-- ;
         }
       }
-      metalinebfx = 0;                               // Reset this line
-      if (( LFcount == 2)&& ctseen) {              // Content type seen and a double LF?
-        ardprintf("Switch to DATA, bitrate is %d"     // Show bitrate
-                   ", metaint is %d",                  // and metaint
-                   bitrate, metaint);
-        setdatamode(DATA);                         // Expecting data now
-        datacount = metaint;                         // Number of bytes before first metadata
-        queuefunc(QSTARTSONG);                     // Queue a request to start song
+      if (--metacount == 0) {
+        metalinebf[metalinebfx] = '\0';                // Make sure line is limited
+        if (strlen(metalinebf)) {                    // Any info present?
+          // metaline contains artist and song name.  For example:
+          // "StreamTitle='Don McLean - American Pie';StreamUrl='';"
+          // Sometimes it is just other info like:
+          // "StreamTitle='60s 03 05 Magic60s';StreamUrl='';"
+          // Isolate the StreamTitle, remove leading and trailing quotes if present.
+          parseCurrentSong(metalinebf);               // Show artist and title if present in metadata
+        }
+        if (metalinebfx > (METASIZ - 10)) {          // Unlikely metaline length?
+          ardprintf("Metadata block too long! Skipping all Metadata from now on.");
+          metaint = 0;                                 // Probably no metadata
+        }
+        datacount = metaint;                           // Reset data count
+        setdatamode(DATA);                           // Expecting data
       }
-    } else {
-      metalinebf[metalinebfx++] = (char)b;           // Normal character, put new char in metaline
-      if (metalinebfx >= METASIZ)                   // Prevent overflow
-      {
-        metalinebfx-- ;
-      }
-      LFcount = 0;                                   // Reset double CRLF detection
-    }
-    return ;
-  }
-  if (datamode == METADATA) {                        // Handle next byte of metadata
-    if (metalinebfx < 0) {                           // First byte of metadata?
-      metalinebfx = 0;                               // Prepare to store first character
-      metacount = b * 16 + 1;                        // New count for metadata including length byte
-      if (metacount > 1 ) {
-        ardprintf("Metadata block %d bytes",
-                   metacount - 1);                   // Most of the time there are zero bytes of metadata
-      }
-    } else {
-      metalinebf[metalinebfx++] = (char)b;           // Normal character, put new char in metaline
-      if (metalinebfx >= METASIZ) {                  // Prevent overflow
-        metalinebfx-- ;
-      }
-    }
-    if (--metacount == 0 ) {
-      metalinebf[metalinebfx] = '\0';                // Make sure line is limited
-      if (strlen(metalinebf)) {                    // Any info present?
-        // metaline contains artist and song name.  For example:
-        // "StreamTitle='Don McLean - American Pie';StreamUrl='';"
-        // Sometimes it is just other info like:
-        // "StreamTitle='60s 03 05 Magic60s';StreamUrl='';"
-        // Isolate the StreamTitle, remove leading and trailing quotes if present.
-        showstreamtitle(metalinebf);               // Show artist and title if present in metadata
-      }
-      if (metalinebfx  >(METASIZ - 10)) {          // Unlikely metaline length?
-        ardprintf("Metadata block too long! Skipping all Metadata from now on.");
-        metaint = 0;                                 // Probably no metadata
-      }
-      datacount = metaint;                           // Reset data count
-      //bufcnt = 0;                                  // Reset buffer count
-      setdatamode(DATA);                           // Expecting data
-    }
+      break;
   }
 }
 
-
 // Show artist and songtitle if present in metadata.                
-// Show always if full=true.                                        
-void showstreamtitle(const char *ml) {
-  char*             p1 ;
-  char*             p2 ;
-  char              streamtitle[150];          // Streamtitle from metadata
+void parseCurrentSong(const char *ml) {
+  char* p1;
+  char* p2;
+  char  streamtitle[150];          // Streamtitle from metadata
 
   if (strstr(ml, "StreamTitle=")) {
     ardprintf("Streamtitle found, %d bytes", strlen(ml));
     ardprintf(ml);
     p1 = (char*)ml + 12;                      // Begin of artist and title
-    if (( p2 = strstr(ml, ";")))         // Search for end of title
-    {
-      if (*p1 == '\'')                       // Surrounded by quotes?
-      {
+    if (( p2 = strstr(ml, ";"))) {        // Search for end of title
+      if (*p1 == '\'') {                      // Surrounded by quotes?
         p1++ ;
         p2-- ;
       }
@@ -392,7 +380,7 @@ void showstreamtitle(const char *ml) {
   if (( p1 = strstr(streamtitle, " - "))) { // look for artist/title separator
     p2 = p1 + 3;                              // 2nd part of text at this position
     *p1++ = '\n';                           // Found: replace 3 characters by newline
-    if (*p2 == ' ')                          // Leading space in title?
+    while (*p2 == ' ')                          // Leading space in title?
     {
       p2++ ;
     }
@@ -402,7 +390,7 @@ void showstreamtitle(const char *ml) {
 }
 
 // Disconnect from the server.                                      
-void stop_mp3client () {
+void stop_mp3client() {
   ardprintf ("FLUSH: Stopping client");               // Stop connection to host
   while(mp3client.connected()) {
     // client.flush() removes only the current packet characters from the socket. By the time you call client.stop(), 
@@ -415,7 +403,7 @@ void stop_mp3client () {
   mp3client.stop();                               // Stop stream client
 }
 
-// Called from the mail loop() for the mp3 functions.               
+// Called from the main loop() for the mp3 functions.               
 // A connection to an MP3 server is active and we are ready to receive data.         
 // Normally there is about 2 to 4 kB available in the data stream.  This depends on the sender. 
 void mp3loop() {
@@ -462,21 +450,20 @@ void mp3loop() {
     queuefunc(QSTOPSONG);                            // Queue a request to stop the song
     metaint = 0;                                       // No metaint known now
     setdatamode(STOPPED);                            // Yes, state becomes STOPPED
-    return ;
+    return;
+  } else if (datamode == RESUMEREQD) {
+    hostreq = true;
   }
   if (newpreset != currentpreset) {          // New station or next from playlist requested?
     if (datamode != STOPPED) {                         // Yes, still busy?
       setdatamode(STOPREQD);                         // Yes, request STOP
     } else {
       host = String(hostFromConfig(newpreset));    // Lookup preset in preferences
-      ardprintf("New preset/file requested (%d) from %s",
-                 newpreset, host.c_str());
+      ardprintf("New preset/file requested (%d) from %s", newpreset, host.c_str());
       if (host != "") {                                // Preset in ini-file?
-        hostreq = true;                                 // Force this station as new preset
-      } else {
-        // This preset is not available, return to preset 0, will be handled in next mp3loop()
-        ardprintf("No host for this preset");
-        newpreset = 0;                        // Wrap to first station
+        hostreq = true;                                // Force this station as new preset
+      } else { // This preset is not available, return to preset 0, will be handled in next mp3loop()
+        newpreset = 0;                   
       }
     }
   }

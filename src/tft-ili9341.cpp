@@ -53,9 +53,9 @@ bool refreshDisplay()
         uint16_t x = p.x;
         uint16_t y = p.y;
         tft.convertRawXY(&x, &y);
-        // tft.drawCircle(x, y, 1, TFT_WHITE);
         last_interrupt_time = millis();
-        ardprintf("tch: %d %d", x, y);
+        // ardprintf("tch: %d %d", x, y);
+        
         // if x on icon 120,60 with wxh 32x32, we use a safety safety margin of 10 on sides
         if (x > 120 && x < 190 && y < 210 && y > 160) {
           // request stop or play

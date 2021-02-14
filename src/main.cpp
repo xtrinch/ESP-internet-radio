@@ -20,6 +20,7 @@ hw_timer_t*       hw_timer = NULL;                     // For timer
 QueueHandle_t     spfqueue;                            // Queue for special functions
 int16_t           currentpreset = -1;                  // Preset station playing
 int16_t           newpreset = 0;                       // Preset station playing
+int               mbitrate;                            // Measured bitrate
 
 void setup() {
   Serial.begin(115200);                        
@@ -211,7 +212,7 @@ void changeState(const char* argument, const char* value) {
   } else if (strcmp(argument, "stop") == 0) {                  // (un)Stop requested?
     setdatamode(STOPREQD);                          // Request STOP
   } else if (strcmp(argument, "resume") == 0) {
-    hostreq = true;                                 // Request UNSTOP
+    setdatamode(RESUMEREQD);                          // Request RESUME
   } else {
     ardprintf("called with illegal parameter: %s", argument);
   }
@@ -220,7 +221,6 @@ void changeState(const char* argument, const char* value) {
 
 // Play stream data from input queue.                               
 // Handle all I/O to VS1053B during normal playing.                 
-// Handles display of text, time and volume on TFT as well.         
 void playtask(void * parameter) {
   while(true) {
     if (xQueueReceive(dataqueue, &inchunk, 5)) {
