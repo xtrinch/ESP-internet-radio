@@ -1,10 +1,11 @@
 # ESP32-internet-radio
 
-Internet radio station using an ESP32, VS1053 module, a TFT ILI9341 screen with an XPT2046 touch controller and an IR 1838 sensor.
+Internet radio station using an `ESP32`, `VS1053` module, a `TFT ILI9341` screen with an `XPT2046` touch controller and an `IR1838` sensor.
 
 Based on https://github.com/Edzelf/Esp-radio but heavily modified.
 
-All configuration, including station presets are hardcoded.
+All configuration, including station presets are hardcoded (although they can optionally be configured via MQTT).
+You can change default values in `config.cpp`.
 
 Interaction with the radio happens via the buttons on the ILI9341's touch screen and the IR remote. 
 You should be able to use any remote, as long as you configure the right keys. 
@@ -18,6 +19,9 @@ The following libraries are used to make this work:
   - `bodmer/TFT_eSPI`
   - `PaulStoffregen/XPT2046_Touchscreen`
   - `z3t0/IRremote`
+  - `marvinroger/async-mqtt-client`
+  - `bblanchon/ArduinoJson`
+  - `TridentTD/TridentTD_ESP32NVS`
 
 SPI bus is shared by the TFT LCD, the touch controller and the the VS1053.
 
@@ -48,3 +52,55 @@ Example wiring:
 | VCC 5 V  | -      | pin 6 VCC                        | pin 9 5V            |  Power supply              |
 | EN       | -      | pin 1 RST                        | pin 3 XRST          |  -                         |
 
+## Optional MQTT support
+
+MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch (see `import-env.example.py`).
+One upstream and one downstream topic is required. 
+ESP will periodically ping the upstream server to let it know it is available.
+
+Communication is focused around saving configuration, not realtime control. 
+Realtime control is left to the touch controls and the IR remote.
+
+### Downstream
+
+Server can send commands downstream in the following format:
+
+```
+{
+  data: {
+    type: 'config' | 'config-request',
+    payload: { // optional
+      presets: [
+        "preset1.com",
+        "preset2.com"
+      ]
+    }
+  }
+}
+```
+
+Command types:
+- `config-request`: server requests config
+- `config`: server sends config in payload
+
+### Upstream
+
+ESP responds upstream with the same format:
+
+```
+{
+  data: {
+    type: 'config' | 'ping',
+    payload: { // optional
+      presets: [
+        "preset1.com",
+        "preset2.com"
+      ]
+    }
+  }
+}
+```
+
+Types:
+- `config`: ESP sends config upstream
+- `ping`: ESP sends a ping

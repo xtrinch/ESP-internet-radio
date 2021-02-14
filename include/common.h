@@ -2,6 +2,10 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+// macro to string expansion for env variables
+#define xstr(s) strs(s)
+#define strs(s) #s
+
 #define DEBUG_BUFFER_SIZE 150
 #define sv DRAM_ATTR static volatile
 

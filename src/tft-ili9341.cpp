@@ -165,19 +165,17 @@ void touch_calibrate()
 
   tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
 
-  Serial.println(); Serial.println();
-  Serial.println("// Use this calibration code in setup():");
-  Serial.print("  uint16_t calData[5] = ");
-  Serial.print("{ ");
+  ardprintf("// Use this calibration code in setup():");
+  ardprintf("  uint16_t calData[5] = ");
+  ardprintf("{ ");
 
   for (uint8_t i = 0; i < 5; i++) {
-    Serial.print(calData[i]);
-    if (i < 4) Serial.print(", ");
+    ardprintf("%d", calData[i]);
+    if (i < 4) ardprintf(", ");
   }
 
-  Serial.println(" };");
-  Serial.print("  tft.setTouch(calData);");
-  Serial.println(); Serial.println();
+  ardprintf(" };");
+  ardprintf("  tft.setTouch(calData);");
 
   tft.fillScreen(TFT_BLACK);
   

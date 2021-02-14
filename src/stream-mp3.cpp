@@ -23,20 +23,6 @@ bool              hostreq = false;                     // Request for new host
 uint8_t           tmpbuff[6000];                       // Input buffer for mp3 or data stream 
 String            icystreamtitle;                      // Streamtitle from metadata
 String            icyname;                             // Icecast station name
-char presets[12][100] = {
-  "109.206.96.34:8100",
-  "airspectrum.cdnstream1.com:8114/1648_128",
-  "us2.internet-radio.com:8050",
-  "airspectrum.cdnstream1.com:8000/1261_192",
-  "airspectrum.cdnstream1.com:8008/1604_128",
-  "us1.internet-radio.com:8105",
-  "icecast.omroep.nl:80/radio1-bb-mp3",
-  "205.164.62.15:10032",
-  "skonto.ls.lv:8002/mp3",
-  "94.23.66.155:8106",
-  "ihr/IHR_IEDM",
-  "ihr/IHR_TRAN"
-};
 
 String readhostfrompref(int16_t preset) {
   return String(presets[preset]);

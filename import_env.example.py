@@ -22,4 +22,9 @@ env.Append(CPPDEFINES=[
   ("SPI_FREQUENCY", "40000000"), # to make sure fonts are not pixelated
   ("SPI_READ_FREQUENCY", "20000000"),
   ("SPI_TOUCH_FREQUENCY", "2500000"),
+  ("MQTT_ENABLED"), # enable/disable mqtt
+  ("MQTT_HOST", "iotfreezer.com"), # mqtt hostname
+  ("MQTT_PORT", "1883"), # mqtt port
+  ("MQTT_UPSTREAM_TOPIC", "radios/upstream/5ab8d5a9-37f9-420f-b1d3-663ca3a41e68"), # mqtt upstream topic name
+  ("MQTT_DOWNSTREAM_TOPIC", "radios/downstream/5ab8d5a9-37f9-420f-b1d3-663ca3a41e68"), # mqtt downstream topic name
 ])
