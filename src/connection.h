@@ -16,7 +16,7 @@
 #define CFG_MQTT_DOWNSTREAM_TOPIC xstr(MQTT_DOWNSTREAM_TOPIC)
 #define CFG_MQTT_HOST xstr(MQTT_HOST)
 
-#define NVS_CONFIG_KEY "configz"
+#define NVS_CONFIG_KEY "configzy"
 
 void connectionSetup();
 

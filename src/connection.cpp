@@ -99,50 +99,39 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
   StaticJsonDocument<1000> doc; // <- a little more than 1000 bytes in the stack
   deserializeJson(doc, payload);
-  
-  StaticJsonDocument<1000> data; // <- a little more than 1000 bytes in the stack
-  deserializeJson(data, doc["data"]);
-  doc.clear();
-  JsonObject obj = data.as<JsonObject>();
 
-  const char * type = data["type"];
+  const char * textContent = doc["data"]; // actual text payload
+  doc.clear(); // discard the rest
+  deserializeJson(doc, textContent);
+
+  JsonObject obj = doc.as<JsonObject>();
+
+  const char * type = doc["type"];
   ardprintf("type: %s", type);
-
 
   if (obj["payload"]) {
     serializeJson(obj["payload"], buffer);
   }
 
   if (strcmp(type, "config") == 0) {
-    NVS.setString(NVS_CONFIG_KEY, String(buffer));
-
-    // char * st = NVS.getCharArray(NVS_CONFIG_KEY);
-    // if (st) {
-    //   ardprintf("Config read back is: %s", st);
-    // }
+    NVS.setString(NVS_CONFIG_KEY, String(buffer)); // save config received from upstream server
   } else if (strcmp(type, "config-request") == 0) {
-    data.clear();
-    doc.clear();
-    data["type"] = "config";
-
     if (NVS.exists(NVS_CONFIG_KEY)) {
-      char * st = NVS.getCharArray(NVS_CONFIG_KEY);
-      data["payload"] = st;
+      strncpy(buffer, NVS.getCharArray(NVS_CONFIG_KEY), 500); // use existing saved config
     } else {
-      ardprintf("Creating config from defaults");
-      // create object into doc
-      JsonArray d = doc.createNestedArray("presets");
+      JsonArray d = doc.createNestedArray("presets"); // create config from defaults
       for (int i=0; i<sizeof(presets)/sizeof(presets[0]); i++) {
         d.add(presets[i]);
       }
       serializeJson(doc, buffer);
-      ardprintf("%s buffer", buffer);
-      // stringify it into data
-      data["payload"] = buffer;
     }
-    serializeJson(data, buffer);
-    mqttClient.publish(CFG_MQTT_UPSTREAM_TOPIC, 0, true, buffer);
+
+    doc.clear();
+    doc["type"] = "config";
+    doc["payload"] = buffer; // always a stringified version into payload for ease for handling
+    serializeJson(doc, buffer);
     ardprintf("Sent config %s", buffer);
+    mqttClient.publish(CFG_MQTT_UPSTREAM_TOPIC, 0, true, buffer); // send response
   }
 }
 
