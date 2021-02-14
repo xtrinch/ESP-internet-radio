@@ -26,7 +26,6 @@ WiFiClient        mp3client;                           // An instance of the mp3
 String            playlist;                            // The URL of the specified playlist
 uint32_t          totalcount = 0;                      // Counter mp3 data
 int               datacount;                           // Counter databytes before metadata
-uint32_t          clength;                             // Content length found in http header
 qdata_struct      outchunk;                            // Data to queue
 qdata_struct      inchunk;                             // Data from queue
 uint8_t*          outqp = outchunk.buf;                // Pointer to buffer in outchunk
@@ -36,88 +35,8 @@ bool              hostreq = false;                     // Request for new host
 uint8_t           tmpbuff[6000];                       // Input buffer for mp3 or data stream 
 
 // forward declarations
-void parseCurrentSong(const char* ml);
+void parseCurrentSong(const char* metaline);
 void stop_mp3client();
-
-// Parses line with XML data and put result in variable specified by parameter.      
-void xmlparse(String &line, const char *selstr, String &res) {
-  String sel = "</";                                 // Will be like "</status-code"
-  int    inx;                                        // Position of "</..." in line
-
-  sel += selstr;                                     // Form searchstring
-  if (line.endsWith(sel)) {                        // Is this the line we are looking for?
-    inx = line.indexOf(sel);                       // Get position of end tag
-    res = line.substring(0, inx);                  // Set result
-  }
-}
-
-// Parses streams from XML data.                                    
-// Example URL: http://playerservices.streamtheworld.com/api/livestream?version=1.5&mount=IHR_TRANAAC&lang=en
-String xmlgethost (String mount) {
-  const char* xmlhost = "playerservices.streamtheworld.com"; // XML data source
-  const char* xmlget =  "GET /api/livestream"                  // XML get parameters
-                        "?version=1.5"                         // API Version of IHeartRadio
-                        "&mount=%sAAC"                         // MountPoint with Station Callsign
-                        "&lang=en";                          // Language
-
-  String   stationServer = "";                    // Radio stream server
-  String   stationPort = "";                      // Radio stream port
-  String   stationMount = "";                     // Radio stream Callsign
-  uint16_t timeout = 0;                           // To detect time-out
-  String   sreply = "";                           // Reply from playerservices.streamtheworld.com
-  String   statuscode = "200";                    // Assume good reply
-  char     tmpstr[200];                           // Full GET command, later stream URL
-  String   urlout;                                // Result URL
-
-  stop_mp3client(); // Stop any current wificlient connections.
-  ardprintf("Connect to new iHeartRadio host: %s", mount.c_str());
-  setdatamode(INIT);                            // Start default in metamode
-  chunked = false;                                  // Assume not chunked
-  sprintf(tmpstr, xmlget, mount.c_str());         // Create a GET commmand for the request
-  ardprintf("%s", tmpstr);
-  if (mp3client.connect(xmlhost, 80, 5000)) {           // Connect to XML stream
-    ardprintf("Connected to %s", xmlhost);
-    mp3client.print(String(tmpstr)+ " HTTP/1.1\r\n"
-                      "Host: " + xmlhost + "\r\n"
-                      "User-Agent: Mozilla/5.0\r\n"
-                      "Connection: close\r\n\r\n");
-    while(mp3client.available() == 0) {
-      delay(200);                                 // Give server some time
-      if (++timeout > 25) {                         // No answer in 5 seconds?
-        ardprintf("Client Timeout !");
-      }
-    }
-    ardprintf("XML parser processing...");
-    while(mp3client.available()) {
-      sreply = mp3client.readStringUntil('>');
-      sreply.trim();
-      // Search for relevant info in in reply and store in variable
-      xmlparse(sreply, "status-code", statuscode);
-      xmlparse(sreply, "ip",          stationServer);
-      xmlparse(sreply, "port",        stationPort);
-      xmlparse(sreply, "mount",       stationMount);
-      if (statuscode != "200") {                    // Good result sofar?
-        ardprintf("Bad xml status-code %s",         // No, show and stop interpreting
-                   statuscode.c_str());
-        tmpstr[0] = '\0';                          // Clear result
-        break;
-      }
-    }
-    // Check if all station values are stored
-    if ((stationServer != "") && (stationPort != "") && (stationMount != "")) {
-      sprintf(tmpstr, "%s:%s/%s_SC",                // Build URL for ESP-Radio to stream.
-                stationServer.c_str(),
-                stationPort.c_str(),
-                stationMount.c_str());
-      ardprintf("Found: %s", tmpstr);
-    }
-  } else {
-    ardprintf("Can't connect to XML host!");       // Connection failed
-    tmpstr[0] = '\0' ;
-  }
-  mp3client.stop();
-  return String(tmpstr);                          // Return final streaming URL.
-}
 
 // Check if a line in the header is a reasonable headerline.        
 // Normally it should contain something like "icy-xxxx:abcdef".     
@@ -127,7 +46,7 @@ bool chkhdrline(const char* str) {
 
   while(( b = *str++)) {                           // Search to end of string
     len++;                                          // Update string length
-    if (! isalpha(b)) {                           // Alpha (a-z, A-Z)
+    if (!isalpha(b)) {                           // Alpha (a-z, A-Z)
       if (b != '-') {                               // Minus sign is allowed
         if (b == ':') {                             // Found a colon?
           return(( len > 5)&&(len < 50));    // Yes, okay if length is okay
@@ -145,39 +64,36 @@ bool connectToStation() {
   int         inx;                                // Position of ":" in hostname
   uint16_t    port = 80;                          // Port number for host
   String      extension = "/";                    // May be like "/mp3" in "skonto.ls.lv:8002/mp3"
-  String      hostwoext = host;                   // Host without extension and portnumber
+  String      hostWithoutExtension = host;                   // Host without extension and portnumber
   String      auth;                               // For basic authentication
 
-  stop_mp3client();                                // Disconnect if still connected
-  ardprintf("Connect to new host %s", host.c_str());
-  tftset(1, "");                                // Clear song and artist
-  tftset(2, "Connecting...");                                // Clear song and artist
-  setdatamode(INIT);                            // Start default in metamode
+  stop_mp3client();                               // Disconnect if still connected
+  tftset(1, "");                                  // Clear song and artist
+  tftset(2, "Connecting...");                      // Clear song and artist
+  setdatamode(INIT);                              // Start default in metamode
   chunked = false;                                // Assume not chunked
   // In the URL there may be an extension, like noisefm.ru:8000/play.m3u&t=.m3u
-  inx = host.indexOf("/");                      // Search for begin of extension
+  inx = host.indexOf("/");                        // Search for begin of extension
   if (inx > 0) {                                  // Is there an extension?
-    extension = host.substring(inx);            // Yes, change the default
-    hostwoext = host.substring(0, inx);         // Host without extension
+    extension = host.substring(inx);              // Yes, change the default
+    hostWithoutExtension = host.substring(0, inx);           // Host without extension
   }
   // In the host there may be a portnumber
-  inx = hostwoext.indexOf(":");                 // Search for separator
+  inx = hostWithoutExtension.indexOf(":");                 // Search for separator
   if (inx >= 0)                                  // Portnumber available?
   {
     port = host.substring(inx + 1 ).toInt();     // Get portnumber as integer
-    hostwoext = host.substring(0, inx);         // Host without portnumber
+    hostWithoutExtension = host.substring(0, inx);         // Host without portnumber
   }
-  ardprintf("Connect to %s on port %d, extension %s",
-             hostwoext.c_str(), port, extension.c_str());
+  ardprintf("Connect to %s on port %d, extension %s", hostWithoutExtension.c_str(), port, extension.c_str());
 
-  ardprintf("Wifi stats: %d", WiFi.status());
-  if (mp3client.connect(hostwoext.c_str(), port, 5000)) {
+  if (mp3client.connect(hostWithoutExtension.c_str(), port, 5000)) {
     ardprintf("Connected to server");
     mp3client.print(String("GET ")+
                       extension +
                       String(" HTTP/1.1\r\n")+
                       String("Host: ")+
-                      hostwoext +
+                      hostWithoutExtension +
                       String("\r\n")+
                       String("Icy-MetaData:1\r\n")+
                       auth +
@@ -185,16 +101,15 @@ bool connectToStation() {
     return true ;
   }
 
-  ardprintf("Request %s failed!", host.c_str());
+  ardprintf("Request %s failed! Wi-Fi connected: %d", host.c_str(), WiFi.isConnected());
   changeState("stop");
   tftset(2, "No connection");                                // Clear song and artist
-
-  return false ;
+  return false;
 }
 
 // Handle the next byte of data from server.                        
 // Chunked transfer encoding aware. Chunk extensions are not supported.              
-void handlebyte_ch(uint8_t b) {
+void handleStreamByte(uint8_t b) {
   static int       chunksize = 0;                     // Chunkcount read from stream
   static int       LFcount;                           // Detection of end of header
   static bool      ctseen = false;                    // First line of header seen or not
@@ -242,22 +157,21 @@ void handlebyte_ch(uint8_t b) {
       metaint = 0;                                     // No metaint found
       LFcount = 0;                                     // For detection end of header
       bitrate = 0;                                     // Bitrate still unknown
-      ardprintf("Switch to HEADER");
-      setdatamode(HEADER);                           // Handle header
+      setdatamode(HEADER);                             // Handle header
       totalcount = 0;                                  // Reset totalcount
       metalinebfx = 0;                                 // No metadata yet
       metalinebf[0] = '\0' ;
       // no break;
     case HEADER:
       if (( b > 0x7F)||                               // Ignore unprintable characters
-          (b == '\r')||                              // Ignore CR
+          (b == '\r')||                               // Ignore CR
           (b == '\0')) {                              // Ignore NULL
         // Yes, ignore
       }
       else if (b == '\n') {                            // Linefeed ?
         LFcount++;                                     // Count linefeeds
         metalinebf[metalinebfx] = '\0';                // Take care of delimiter
-        if (chkhdrline(metalinebf)) {                // Reasonable input?
+        if (chkhdrline(metalinebf)) {                  // Reasonable input?
           ardprintf("Headerline: %s",                   // Show headerline
                     metalinebf);
           String metaline = String(metalinebf);      // Convert to string
@@ -333,11 +247,6 @@ void handlebyte_ch(uint8_t b) {
       if (--metacount == 0) {
         metalinebf[metalinebfx] = '\0';                // Make sure line is limited
         if (strlen(metalinebf)) {                    // Any info present?
-          // metaline contains artist and song name.  For example:
-          // "StreamTitle='Don McLean - American Pie';StreamUrl='';"
-          // Sometimes it is just other info like:
-          // "StreamTitle='60s 03 05 Magic60s';StreamUrl='';"
-          // Isolate the StreamTitle, remove leading and trailing quotes if present.
           parseCurrentSong(metalinebf);               // Show artist and title if present in metadata
         }
         if (metalinebfx > (METASIZ - 10)) {          // Unlikely metaline length?
@@ -351,17 +260,22 @@ void handlebyte_ch(uint8_t b) {
   }
 }
 
-// Show artist and songtitle if present in metadata.                
-void parseCurrentSong(const char *ml) {
+// Show artist and songtitle if present in metadata.    
+// metaline contains artist and song name.  For example:
+// "StreamTitle='Don McLean - American Pie';StreamUrl='';"
+// Sometimes it is just other info like:
+// "StreamTitle='60s 03 05 Magic60s';StreamUrl='';"
+// Isolate the StreamTitle, remove leading and trailing quotes if present.            
+void parseCurrentSong(const char *metaline) {
   char* p1;
   char* p2;
   char  streamtitle[150];          // Streamtitle from metadata
 
-  if (strstr(ml, "StreamTitle=")) {
-    ardprintf("Streamtitle found, %d bytes", strlen(ml));
-    ardprintf(ml);
-    p1 = (char*)ml + 12;                      // Begin of artist and title
-    if (( p2 = strstr(ml, ";"))) {        // Search for end of title
+  if (strstr(metaline, "StreamTitle=")) {
+    ardprintf("Streamtitle found, %d bytes", strlen(metaline));
+    ardprintf(metaline);
+    p1 = (char*)metaline + 12;                      // Begin of artist and title
+    if (( p2 = strstr(metaline, ";"))) {        // Search for end of title
       if (*p1 == '\'') {                      // Surrounded by quotes?
         p1++ ;
         p2-- ;
@@ -373,7 +287,7 @@ void parseCurrentSong(const char *ml) {
     streamtitle[sizeof(streamtitle)- 1] = '\0' ;
   } else {
     // Info probably from playlist
-    strncpy(streamtitle, ml, sizeof(streamtitle));
+    strncpy(streamtitle, metaline, sizeof(streamtitle));
     streamtitle[sizeof(streamtitle)- 1] = '\0' ;
   }
   // Save for status request from browser and for MQTT
@@ -410,7 +324,6 @@ void mp3loop() {
   uint32_t        maxchunk;                            // Max number of bytes to read
   int             res = 0;                             // Result reading from mp3 stream
   uint32_t        av = 0;                              // Available in stream
-  String          nodeID;                              // Next nodeID of track on SD
   uint32_t        timing;                              // Startime and duration this function
   uint32_t        qspace;                              // Free space in data queue
 
@@ -432,7 +345,7 @@ void mp3loop() {
       res = mp3client.read(tmpbuff, maxchunk);     // Read a number of bytes from the stream
     }
     for(int i = 0;i < res; i++) {
-      handlebyte_ch(tmpbuff[i]);                     // Handle one byte
+      handleStreamByte(tmpbuff[i]);                     // Handle one byte
     }
     timing = millis() - timing;                        // Duration this function
     if (timing > max_mp3loop_time)                    // New maximum found?
@@ -442,14 +355,13 @@ void mp3loop() {
     }
   }
   if (datamode == STOPREQD) {                          // STOP requested?
-    ardprintf("STOP requested");
-    stop_mp3client();                                 // Disconnect if still connected
+    stop_mp3client();                                  // Disconnect if still connected
     chunked = false;                                   // Not longer chunked
     datacount = 0;                                     // Reset datacount
     outqp = outchunk.buf;                              // and pointer
-    queuefunc(QSTOPSONG);                            // Queue a request to stop the song
+    queuefunc(QSTOPSONG);                              // Queue a request to stop the song
     metaint = 0;                                       // No metaint known now
-    setdatamode(STOPPED);                            // Yes, state becomes STOPPED
+    setdatamode(STOPPED);                              // Yes, state becomes STOPPED
     return;
   } else if (datamode == RESUMEREQD) {
     hostreq = true;
