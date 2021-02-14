@@ -20,8 +20,6 @@ You should be able to use any remote, as long as you configure the right keys.
 
 Controls support starting, stopping, going to next or previous station.
 
-Make sure you upload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
-
 The following libraries are used to make this work:
 
   - `bodmer/TFT_eSPI`
@@ -39,6 +37,13 @@ Want to use it with the arduino IDE? You should be able to with slight modificat
 ## Usage
 
 To get started, copy `import_env.example.py` to `import_env.py` and fill in your pin configuration.
+
+Uupload the `/data` folder where the fonts reside to the ESP before flashing. You can do that with `pio run --target uploadfs` or just use the platformio addon for vscode and click on `Upload Filesystem Image`.
+
+### Wiring
+
+Pins are fully configurable via `import_env.py`. 
+Note that the SPI bus is shared, so your wiring has to reflect that.
 
 Example wiring:
 
