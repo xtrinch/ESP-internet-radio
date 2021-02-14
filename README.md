@@ -31,7 +31,7 @@ The following libraries are used to make this work:
   - `bblanchon/ArduinoJson`
   - `TridentTD/TridentTD_ESP32NVS`
 
-SPI bus is shared by the TFT LCD, the touch controller and the the VS1053.
+SPI bus is shared by the `TFT LCD`, the touch controller and the the `VS1053`.
 
 Built with `platform.io`. 
 Want to use it with the arduino IDE? You should be able to with slight modifications to the file structure, but you should really just use platform.io, it's far superior ;) 
