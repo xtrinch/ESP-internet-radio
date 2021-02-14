@@ -9,7 +9,7 @@
 #include "stream-mp3.h"
 #include "connection.h"
 #ifdef MQTT_ENABLED
-#include "connection-mqtt.h"
+#include "mqtt.h"
 #endif
 
 // Number of entries in the queue

@@ -17,6 +17,10 @@ char presets[12][100] = {
   "ihr/IHR_TRAN"
 };
 
+char * hostFromConfig(int16_t preset) {
+  return presets[preset];
+}
+
 void configSetup() {
   NVS.begin();
   parseExistingConfig();

@@ -43,7 +43,7 @@ void connectionSetup() {
   WiFi.disconnect();                                 // After restart router could still
   delay(500);                                        // keep old connection
   WiFi.mode(WIFI_STA);                               // This ESP is a station
-  delay(500);                                        // ??
+  delay(500);                                        
   WiFi.persistent(false);                            // Do not save SSID and password
 
   // reconnect with timers to ensure we try every 2sek when connection is lost

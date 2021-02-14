@@ -14,6 +14,7 @@ char * existingConfig();
 bool configExists();
 void setConfig(const char * buffer);
 char * existingConfig();
+char * hostFromConfig(int16_t preset);
 
 extern char presets[12][100];
 

@@ -1,58 +1,10 @@
-//*  ESP32_Radio -- Webradio receiver for ESP32, VS1053 MP3 module and optional display.         
-//*                 By Ed Smallenburg.                               
-// See http://www.internet-radio.com for suitable stations.  Add the stations of your choice
-// to the preferences in either Esp32_radio_init.ino sketch or through the webinterface.
-//
-// Brief description of the program:
-// First a suitable WiFi network is found and a connection is made.
-// Then a connection will be made to a shoutcast server.  The server starts with some
-// info in the header in readable ascii, ending with a double CRLF, like:
-//  icy-name:Classic Rock Florida - SHE Radio
-//  icy-genre:Classic Rock 60s 70s 80s Oldies Miami South Florida
-//  icy-url:http://www.ClassicRockFLorida.com
-//  content-type:audio/mpeg
-//  icy-pub:1
-//  icy-metaint:32768          - Metadata after 32768 bytes of MP3-data
-//  icy-br:128                 - in kb/sec (for Ogg this is like "icy-br=Quality 2"
-//
-// After de double CRLF is received, the server starts sending mp3- or Ogg-data.  For mp3, this
-// data may contain metadata (non mp3) after every "metaint" mp3 bytes.
-// The metadata is empty in most cases, but if any is available the content will be
-// presented on the TFT.
-//
-// The VSPI interface is used for VS1053, TFT and SD.
-//
-// Wiring. Note that this is just an example.  Pins (except 18,19 and 23 of the SPI interface)
-// can be configured in the config page of the web interface.
-// ESP32dev Signal  Wired to LCD        Wired to VS1053      SDCARD   Wired to the rest
-// -------- ------  --------------      -------------------  ------   ---------------
-// GPIO32           -                   pin 1 XDCS            -       -
-// GPIO5            -                   pin 2 XCS             -       -
-// GPIO4            -                   pin 4 DREQ            -       -
-// GPIO2            pin 3 D/C or A0     -                     -       -
-// GPIO22           -                   -                     CS      -
-// GPIO18   SCK     pin 5 CLK or SCK    pin 5 SCK             CLK     -
-// GPIO19   MISO    -                   pin 7 MISO            MISO    -
-// GPIO23   MOSI    pin 4 DIN or SDA    pin 6 MOSI            MOSI    -
-// GPIO15           pin 2 CS            -                     -       -
-// GPI03    RXD0    -                   -                     -       Reserved serial input
-// GPIO1    TXD0    -                   -                     -       Reserved serial output
-// GPIO34   -       -                   -                     -       Optional pull-up resistor
-// GPIO35   -       -                   -                     -       Infrared receiver VS1838B
-// -------  ------  ---------------     -------------------  ------   ----------------
-// GND      -       pin 8 GND           pin 8 GND                     Power supply GND
-// VCC 5 V  -       pin 7 BL            -                             Power supply
-// VCC 5 V  -       pin 6 VCC           pin 9 5V                      Power supply
-// EN       -       pin 1 RST           pin 3 XRST                    -
-
 #include "main.h"
 
 // Forward declaration and prototypes of various functions.         
 void        playtask(void * parameter);             // Task to play the stream
 void        spftask(void * parameter);              // Task for special functions
 void        claimSPI(const char* p);                // Claim SPI bus for exclusive access
-void        releaseSPI();                              // Release the claim
-bool        connectToWifi();
+void        releaseSPI();                           // Release the claim
 void        timer100();
 const char* changeState(const char* par, const char* val);
 
@@ -72,7 +24,7 @@ bool              NetworkFound = false;                // True if WiFi network c
 
 void setup() {
   Serial.begin(115200);                              // For debug
-  Serial.println();
+  while(!Serial);
 
   // Print some memory and sketch info
   ardprintf("Starting ESP32-radio running on CPU %d at %d MHz. Free memory %d",
@@ -102,6 +54,7 @@ void setup() {
   // setup wifi
   connectionSetup();
 
+  // setup nvs config
   configSetup();
 
   vs1053player->begin();                                // Initialize VS1053 player

@@ -1,5 +1,20 @@
 #include "stream-mp3.h"
 
+// A connection is made to a shoutcast server.  The server starts with some
+// info in the header in readable ascii, ending with a double CRLF, like:
+//  icy-name:Classic Rock Florida - SHE Radio
+//  icy-genre:Classic Rock 60s 70s 80s Oldies Miami South Florida
+//  icy-url:http://www.ClassicRockFLorida.com
+//  content-type:audio/mpeg
+//  icy-pub:1
+//  icy-metaint:32768          - Metadata after 32768 bytes of MP3-data
+//  icy-br:128                 - in kb/sec (for Ogg this is like "icy-br=Quality 2")
+//
+// After a double CRLF is received, the server starts sending mp3- or Ogg-data.  For mp3, this
+// data may contain metadata (non mp3) after every "metaint" mp3 bytes.
+// The metadata is empty in most cases, but if any is available the content will be
+// presented on the TFT.
+
 bool              chunked = false;                     // Station provides chunked transfer
 int               chunkcount = 0;                      // Counter for chunked transfer
 int               bitrate;                             // Bitrate in kb/sec
@@ -23,10 +38,6 @@ bool              hostreq = false;                     // Request for new host
 uint8_t           tmpbuff[6000];                       // Input buffer for mp3 or data stream 
 String            icystreamtitle;                      // Streamtitle from metadata
 String            icyname;                             // Icecast station name
-
-String readhostfrompref(int16_t preset) {
-  return String(presets[preset]);
-}
 
 // Parses line with XML data and put result in variable specified by parameter.      
 void xmlparse(String &line, const char *selstr, String &res) {
@@ -456,7 +467,7 @@ void mp3loop() {
     if (datamode != STOPPED) {                         // Yes, still busy?
       setdatamode(STOPREQD);                         // Yes, request STOP
     } else {
-      host = readhostfrompref(newpreset);    // Lookup preset in preferences
+      host = String(hostFromConfig(newpreset));    // Lookup preset in preferences
       chomp(host);                                  // Get rid of part after "#"
       ardprintf("New preset/file requested (%d) from %s",
                  newpreset, host.c_str());
@@ -471,12 +482,7 @@ void mp3loop() {
   }
   if (hostreq) {                                        // New preset or station?
     hostreq = false ;
-    currentpreset = newpreset;                // Remember current preset
-    if (host.startsWith("ihr/"))                   // iHeartRadio station requested?
-    {
-      host = host.substring(4);                     // Yes, remove "ihr/"
-      host = xmlgethost(host);                      // Parse the xml to get the host
-    }
+    currentpreset = newpreset;                         // Remember current preset
     connecttohost();                                   // Switch to new host
   }
 }

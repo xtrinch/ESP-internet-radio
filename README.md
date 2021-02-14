@@ -23,6 +23,8 @@ Controls support starting, stopping, going to next or previous station.
 Library assumes an external amplifier (you can get cheap PC speakers for 10$), so the volume is fixed at 90% and the volume control happens at the external amplifier.
 Should you require internal volume control, it should be easy enough to add it.
 
+See http://www.internet-radio.com for suitable stations.
+
 The following libraries are used to make this work:
 
   - `bodmer/TFT_eSPI`

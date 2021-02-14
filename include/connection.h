@@ -9,7 +9,7 @@
 #include "config.h"
 
 #ifdef MQTT_ENABLED
-#include "connection-mqtt.h"
+#include "mqtt.h"
 #endif
 
 #define CFG_WIFI_SSID xstr(WIFI_SSID)

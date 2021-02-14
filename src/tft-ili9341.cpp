@@ -78,35 +78,41 @@ bool refreshDisplay()
     return false;  
   }
 
+  // account for border margins
   sprite.createSprite(width-40, height-40);
   sprite.fillSprite(TFT_BLACK);
 
-  sprite.setTextWrap(false); // Wrap on width
-
   // icy name
+  sprite.setTextWrap(false); // do not wrap on width
   sprite.setTextColor (TFT_YELLOW);     
   char displayIcyName[60];
   snprintf(displayIcyName, 60, "%d: %s", currentpreset, icyName.c_str());
   sprite.drawString(displayIcyName, 0, 0);       
 
-  sprite.setTextWrap(true); // Wrap on width
-
   // stream title
+  sprite.setTextWrap(true); // Wrap on width
   sprite.setTextColor (TFT_WHITE);
   sprite.drawRect(0, 50, width - 40, 50, TFT_BLACK); // handle overflow of icy name                
   sprite.drawString(streamTitle, 0, 40);  
 
+  // preset=prev icon
   sprite.fillRect(61, 160, 5, 32, TFT_YELLOW);
   sprite.fillTriangle(56, 160, 26, 175, 56, 190, TFT_YELLOW);
+
+  // stop/start icon
   if (datamode == STOPPED) {
     sprite.fillTriangle(120, 160, 150, 175, 120, 190, TFT_GREEN);
   } else {
     sprite.fillRect(120, 160, 32, 32, TFT_RED); 
   }
+
+  // preset=next icon
   sprite.fillRect(207, 160, 5, 32, TFT_YELLOW);
   sprite.fillTriangle(216, 160, 246, 175, 216, 190, TFT_YELLOW);
 
   update_req = false;  // Reset request
+
+  // draw sprite on screen
   sprite.pushSprite(20, 20);
   return true;                                         // Not a single request
 }
