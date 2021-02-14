@@ -65,7 +65,6 @@ bool connectToStation() {
   uint16_t    port = 80;                          // Port number for host
   String      extension = "/";                    // May be like "/mp3" in "skonto.ls.lv:8002/mp3"
   String      hostWithoutExtension = host;                   // Host without extension and portnumber
-  String      auth;                               // For basic authentication
 
   stop_mp3client();                               // Disconnect if still connected
   tftset(1, "");                                  // Clear song and artist
@@ -95,7 +94,6 @@ bool connectToStation() {
                       hostWithoutExtension +
                       String("\r\n")+
                       String("Icy-MetaData:1\r\n")+
-                      auth +
                       String("Connection: close\r\n\r\n"));
     return true ;
   }
