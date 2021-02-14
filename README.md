@@ -52,7 +52,8 @@ Example wiring:
 ## Optional MQTT support
 
 MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch (see `import-env.example.py`).
-One upstream and one downstream topic is required.
+One upstream and one downstream topic is required. 
+ESP will periodically ping the upstream server to let it know it is available.
 
 Server can send commands in the following format:
 
@@ -80,7 +81,7 @@ ESP responds with the same format:
 Expects json in format:
 {
   data: {
-    type: 'config',
+    type: 'config' | 'ping',
     payload: {
       presets: [
         "preset1.com",
@@ -93,3 +94,4 @@ Expects json in format:
 
 Types:
 - `config`: ESP sends config upstream
+- `ping`: ESP sends a ping
