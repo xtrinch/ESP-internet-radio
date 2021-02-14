@@ -80,8 +80,7 @@ bool connectToStation() {
   }
   // In the host there may be a portnumber
   inx = hostWithoutExtension.indexOf(":");                 // Search for separator
-  if (inx >= 0)                                  // Portnumber available?
-  {
+  if (inx >= 0) {                                 // Portnumber available?
     port = host.substring(inx + 1 ).toInt();     // Get portnumber as integer
     hostWithoutExtension = host.substring(0, inx);         // Host without portnumber
   }
@@ -294,8 +293,7 @@ void parseCurrentSong(const char *metaline) {
   if (( p1 = strstr(streamtitle, " - "))) { // look for artist/title separator
     p2 = p1 + 3;                              // 2nd part of text at this position
     *p1++ = '\n';                           // Found: replace 3 characters by newline
-    while (*p2 == ' ')                          // Leading space in title?
-    {
+    while (*p2 == ' ') {                         // Leading space in title?
       p2++ ;
     }
     strcpy(p1, p2);                         // Shift 2nd part of title 2 or 3 places
@@ -380,7 +378,7 @@ void mp3loop() {
     }
   }
   if (hostreq) {                                        // New preset or station?
-    hostreq = false ;
+    hostreq = false;
     currentpreset = newpreset;                         // Remember current preset
     connectToStation();                                   // Switch to new host
   }

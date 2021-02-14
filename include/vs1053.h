@@ -38,7 +38,7 @@ class VS1053
     const uint8_t SM_LINE1          = 14 ;        // Bitnumber in SCI_MODE for Line input
     SPISettings   VS1053_SPI ;                    // SPI settings for this slave
     uint8_t       endFillByte ;                   // Byte to send when stopping song
-    bool          okay              = true ;      // VS1053 is working
+    bool          okay              = true;      // VS1053 is working
   protected:
     inline void await_data_request() const
     {

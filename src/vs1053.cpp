@@ -97,7 +97,7 @@ bool VS1053::testComm ( const char *header ) {
     ardprintf ( "VS1053 not properly installed!" ) ;
     // Allow testing without the VS1053 module
     pinMode ( dreq_pin,  INPUT_PULLUP ) ;               // DREQ is now input with pull-up
-    return false ;                                      // Return bad result
+    return false;                                      // Return bad result
   }
   // Further TESTING.  Check if SCI bus can write and read without errors.
   // We will use the volume setting for this.
@@ -127,7 +127,7 @@ bool VS1053::testComm ( const char *header ) {
     ardprintf ( "This is not a VS1053, "                 // Report the wrong chip
                "but a VS%d instead!",
                vstype[r1] ) ;
-    okay = false ;
+    okay = false;
   }
   return ( okay ) ;                                     // Return the result
 }
