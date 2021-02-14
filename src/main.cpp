@@ -94,6 +94,7 @@ void setup() {
   }
   blset(true);                                       // Enable backlight (if configured)
   
+  // has to be called before wifi setup
   #ifdef MQTT_ENABLED
   mqttSetup();
   #endif
@@ -106,16 +107,13 @@ void setup() {
   vs1053player->begin();                                // Initialize VS1053 player
   // vs1053player->switchToMp3Mode();
 
-  delay(10);
-  NetworkFound = connectToWifi();                           // Connect to WiFi network
-  if (!NetworkFound) {                                  // OTA and MQTT only if Wifi network found
+  if (!WiFi.isConnected()) {                                  // OTA and MQTT only if Wifi network found
     currentpreset = -1;               // No network: do not start radio
   }
   hw_timer = timerBegin(0, 80, true);                   // User 1st timer with prescaler 80
   timerAttachInterrupt(hw_timer, &timer100, true);      // Call hw_timer100() on hw_timer alarm
   timerAlarmWrite(hw_timer, 100000, true);              // Alarm every 100 msec
   timerAlarmEnable(hw_timer);                           // Enable the timer
-  delay(1000);                                       // Show IP for a while
 
   outchunk.datatyp = QDATA;                             // This chunk dedicated to QDATA
   dataqueue = xQueueCreate(QSIZ,                        // Create queue for communication

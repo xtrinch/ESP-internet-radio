@@ -7,9 +7,10 @@
 #include <WebServer.h>
 #include "ir.h"
 #include "stream-mp3.h"
-#include <IRremote.h>
 #include "connection.h"
+#ifdef MQTT_ENABLED
 #include "connection-mqtt.h"
+#endif
 
 // Number of entries in the queue
 #define QSIZ 400
