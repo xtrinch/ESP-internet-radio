@@ -1,6 +1,14 @@
 # ESP32-internet-radio
 
-Internet radio station using an `ESP32`, `VS1053` module, a `TFT ILI9341` screen with an `XPT2046` touch controller and an `IR1838` sensor.
+Internet radio station using an `ESP32` and a `VS1053` module.
+
+Components:
+
+- `ESP32` dev board
+- `VS1053` module
+- `TFT ILI9341` screen
+- `XPT2046` touch controller (can be on the display module)
+- `IR1838` sensor
 
 Based on https://github.com/Edzelf/Esp-radio but heavily modified.
 
