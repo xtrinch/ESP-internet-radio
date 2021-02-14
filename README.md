@@ -58,6 +58,9 @@ MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch
 One upstream and one downstream topic is required. 
 ESP will periodically ping the upstream server to let it know it is available.
 
+Communication is focused around saving configuration, not realtime control. 
+Realtime control is left to the touch controls and the IR remote.
+
 ### Downstream
 
 Server can send commands downstream in the following format:
