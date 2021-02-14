@@ -15,7 +15,7 @@ Based on https://github.com/Edzelf/Esp-radio but heavily modified.
 All configuration, including station presets are hardcoded (although they can optionally be configured via MQTT).
 You can change default values in `config.cpp`.
 
-Interaction with the radio happens via the buttons on the ILI9341's touch screen and the IR remote. 
+Interaction with the radio happens via the buttons on the `ILI9341`'s touch screen and the IR remote. 
 You should be able to use any remote, as long as you configure the right keys. 
 
 Controls support starting, stopping, going to next or previous station.
@@ -62,7 +62,7 @@ Example wiring:
 
 ## Optional MQTT support
 
-MQTT support is optionally implemented and can be enabled via MQTT_ENABLE switch (see `import-env.example.py`).
+MQTT support is optionally implemented and can be enabled via `MQTT_ENABLE` switch (see `import-env.example.py`).
 One upstream and one downstream topic is required. 
 ESP will periodically ping the upstream server to let it know it is available.
 
