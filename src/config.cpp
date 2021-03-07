@@ -3,8 +3,8 @@
 // default presets
 // the only way to configure them is via MQTT or changing it here
 char presets[12][100] = {
-  "109.206.96.34:8100",
   "airspectrum.cdnstream1.com:8114/1648_128",
+  "109.206.96.34:8100",
   "us2.internet-radio.com:8050",
   "airspectrum.cdnstream1.com:8000/1261_192",
   "airspectrum.cdnstream1.com:8008/1604_128",

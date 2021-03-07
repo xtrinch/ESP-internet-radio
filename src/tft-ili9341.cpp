@@ -122,10 +122,10 @@ bool display_begin()
 {
   SPIFFS.begin();                               // Init flash filesystem
   ts.begin(SPI);
-  ts.setRotation(3);
+  ts.setRotation(1);
   tft.begin();                                  // Init TFT interface
 
-  tft.setRotation(3);                           // Use landscape format
+  tft.setRotation(1);                           // Use landscape format
   tft.fillScreen(BLACK);                        // Clear screen
   tft.setTextColor(WHITE);                      // Info in white
 
